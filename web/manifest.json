@@ -1,0 +1,17 @@
+{
+  "name": "CALCUP - Think Fast. Calculate Faster.",
+  "short_name": "CALCUP",
+  "description": "Government competitive examination calculation practice app.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F0E5",
+  "theme_color": "#FF922E",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

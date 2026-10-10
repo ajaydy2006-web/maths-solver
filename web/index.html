@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>CALCUP • Think Fast. Calculate Faster.</title>
+  <meta name="description" content="Government competitive examination calculation practice app for SSC, Railway, Banking, and State exams.">
+  <meta name="theme-color" content="#FF922E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="CALCUP">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <!-- Google Fonts: Fredoka & Nunito Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- App Shell Container -->
+  <div id="app-shell" class="app-shell">
+
+    <!-- Desktop Companion QR Overlay (Only shows if opened on wide screens) -->
+    <div id="desktop-qr-banner" class="desktop-qr-banner">
+      <div class="qr-content">
+        <span class="qr-badge">📱 Mobile Direct Access</span>
+        <p>Open this URL or scan on your phone connected to the same Wi-Fi:</p>
+        <code id="phone-url-display">http://10.129.209.119:8080</code>
+        <button id="btn-show-qr" class="btn-text">Show QR Code</button>
+      </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="modal-qr" class="modal hidden">
+      <div class="modal-card">
+        <h3>Scan on Your Phone</h3>
+        <p>Connect your phone to the same Wi-Fi network and scan:</p>
+        <div id="qr-code-img" class="qr-box"></div>
+        <code id="qr-url-text">http://10.129.209.119:8080</code>
+        <button id="btn-close-qr" class="btn-secondary">Close</button>
+      </div>
+    </div>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <main id="main-content" class="main-content">
+      
+      <!-- 1. SPLASH SCREEN -->
+      <section id="screen-splash" class="screen screen-splash">
+        <div class="splash-center">
+          <div class="splash-icon">
+            <svg viewBox="0 0 100 100" width="80" height="80">
+              <rect width="100" height="100" rx="28" fill="#FF922E" />
+              <text x="50" y="65" font-family="'Fredoka', sans-serif" font-size="52" font-weight="bold" fill="#FFFFFF" text-anchor="middle">⚡</text>
+            </svg>
+          </div>
+          <h1 class="splash-title">CALCUP</h1>
+          <p class="splash-tagline">Think Fast. Calculate Faster.</p>
+          <div class="splash-loader"></div>
+        </div>
+      </section>
+
+      <!-- 2. ONBOARDING SCREEN -->
+      <section id="screen-onboarding" class="screen screen-onboarding hidden">
+        <div class="onboarding-top">
+          <button id="btn-skip-onboarding" class="btn-text">Skip</button>
+        </div>
+        <div id="onboarding-steps" class="onboarding-steps">
+          <!-- Step 0: Welcome -->
+          <div class="onboarding-page active" data-step="0">
+            <div class="onboard-icon">🧠</div>
+            <h2>Train Your Brain.</h2>
+            <p>Build calculation speed, razor-sharp accuracy, and confidence under strict exam time pressure.</p>
+          </div>
+          <!-- Step 1: Target Exams -->
+          <div class="onboarding-page" data-step="1">
+            <div class="onboard-icon">🎯</div>
+            <h2>What are you preparing for?</h2>
+            <p>Select your target competitive examinations.</p>
+            <div class="chip-group" id="onboard-exams">
+              <button class="chip active" data-val="SSC">SSC (CGL, CHSL, MTS)</button>
+              <button class="chip active" data-val="Banking">Banking (IBPS, SBI, PO)</button>
+              <button class="chip" data-val="Railway">Railway (RRB NTPC, Group D)</button>
+              <button class="chip" data-val="State Govt">State Government Exams</button>
+              <button class="chip" data-val="Other">Other Competitive Exams</button>
+            </div>
+          </div>
+          <!-- Step 2: Level -->
+          <div class="onboarding-page" data-step="2">
+            <div class="onboard-icon">📊</div>
+            <h2>Where are you starting from?</h2>
+            <p>We'll calibrate question bounds to match your level.</p>
+            <div class="selection-list" id="onboard-level">
+              <button class="select-card active" data-val="Beginner">
+                <strong>Beginner</strong>
+                <span>Building foundational speed and basic tables</span>
+              </button>
+              <button class="select-card" data-val="Intermediate">
+                <strong>Intermediate</strong>
+                <span>Comfortable with arithmetic, aiming for high speed</span>
+              </button>
+              <button class="select-card" data-val="Advanced">
+                <strong>Advanced</strong>
+                <span>Competitive exam speed-tier, complex BODMAS & series</span>
+              </button>
+            </div>
+          </div>
+          <!-- Step 3: Daily Target -->
+          <div class="onboarding-page" data-step="3">
+            <div class="onboard-icon">⏱️</div>
+            <h2>Daily Practice Target</h2>
+            <p>Daily micro-practice yields faster mental arithmetic.</p>
+            <div class="grid-choices" id="onboard-daily">
+              <button class="choice-btn" data-val="5">5 mins</button>
+              <button class="choice-btn active" data-val="10">10 mins</button>
+              <button class="choice-btn" data-val="15">15 mins</button>
+              <button class="choice-btn" data-val="20">20 mins</button>
+            </div>
+          </div>
+          <!-- Step 4: Ready -->
+          <div class="onboarding-page" data-step="4">
+            <div class="onboard-icon">🚀</div>
+            <h2>You're Ready to Roll!</h2>
+            <p>Strict 3-Wrong Restart rule is armed to forge flawless speed.</p>
+            <div class="summary-card">
+              <div class="sum-row"><span>Starting Tier:</span> <strong id="sum-level">Beginner</strong></div>
+              <div class="sum-row"><span>Daily Goal:</span> <strong id="sum-goal">10 mins/day</strong></div>
+              <div class="sum-row"><span>Rule:</span> <strong style="color:var(--error-red);">3 Mistakes = Retry</strong></div>
+            </div>
+          </div>
+        </div>
+        <div class="onboarding-footer">
+          <div class="dots-indicator" id="onboard-dots">
+            <span class="dot active"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+          <button id="btn-next-onboarding" class="btn-primary full-width">Continue</button>
+        </div>
+      </section>
+
+      <!-- 3. HOME TAB SCREEN -->
+      <section id="screen-home" class="screen screen-home hidden">
+        <header class="app-header">
+          <div>
+            <h2 id="home-greeting" class="title-greeting">Hey, Aspirant!</h2>
+            <p class="subtitle-greeting">Ready to calculate faster today?</p>
+          </div>
+          <button id="btn-profile-avatar" class="avatar-circle">A</button>
+        </header>
+
+        <!-- Daily Goal Flame Card -->
+        <div class="card daily-goal-card">
+          <div class="card-head">
+            <div class="flex-align">
+              <span class="fire-icon">🔥</span>
+              <h3>Daily Practice Goal</h3>
+            </div>
+            <span id="badge-goal-status" class="badge-status hidden">Goal Met!</span>
+          </div>
+          <p id="daily-goal-desc" class="text-sub">Stay consistent to build razor-sharp mental arithmetic.</p>
+          <div class="progress-bar-bg">
+            <div id="daily-goal-fill" class="progress-bar-fill" style="width: 0%;"></div>
+          </div>
+          <div class="card-foot flex-between">
+            <strong id="daily-goal-text">0 / 10 minutes today</strong>
+            <span id="daily-goal-percent" class="text-sub">0%</span>
+          </div>
+        </div>
+
+        <!-- Blitz Banner -->
+        <div class="card blitz-banner" id="btn-rapid-blitz">
+          <div class="blitz-left">
+            <span class="blitz-icon">⚡</span>
+            <div>
+              <strong>Rapid 60-Second Blitz</strong>
+              <p>Mixed exam challenges across all categories</p>
+            </div>
+          </div>
+          <button class="btn-accent-sm">Start</button>
+        </div>
+
+        <!-- Categories Heading -->
+        <div class="flex-between section-title-row">
+          <h3>Practice Categories</h3>
+          <span class="badge-sub">10 Modules</span>
+        </div>
+
+        <!-- 10 Modules Grid -->
+        <div class="category-grid" id="category-grid">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- 4. QUICK PRACTICE TAB SCREEN -->
+      <section id="screen-practice-tab" class="screen screen-practice-tab hidden">
+        <header class="app-header">
+          <h2>Quick Practice</h2>
+        </header>
+        <p class="text-sub px-20">Pick any calculation topic to train under timed conditions.</p>
+        <div class="practice-topic-list" id="practice-topic-list">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- 5. PROGRESS DASHBOARD TAB SCREEN -->
+      <section id="screen-progress" class="screen screen-progress hidden">
+        <header class="app-header">
+          <h2>Progress & Analytics</h2>
+        </header>
+        <div class="metrics-grid">
+          <div class="metric-card bg-blue">
+            <div class="metric-head"><span>Sessions</span> <i>✓</i></div>
+            <strong id="stat-sessions" class="metric-val">0</strong>
+            <span class="metric-sub">completed</span>
+          </div>
+          <div class="metric-card bg-green">
+            <div class="metric-head"><span>Accuracy</span> <i>🎯</i></div>
+            <strong id="stat-accuracy" class="metric-val">0%</strong>
+            <span class="metric-sub">overall average</span>
+          </div>
+          <div class="metric-card bg-yellow">
+            <div class="metric-head"><span>Questions</span> <i>🔢</i></div>
+            <strong id="stat-questions" class="metric-val">0</strong>
+            <span class="metric-sub">solved</span>
+          </div>
+          <div class="metric-card bg-purple">
+            <div class="metric-head"><span>Time</span> <i>⏱️</i></div>
+            <strong id="stat-time" class="metric-val">0m</strong>
+            <span class="metric-sub">practised</span>
+          </div>
+        </div>
+
+        <h3 class="section-title">Category Mastery</h3>
+        <div class="card" id="category-mastery-card">
+          <div id="category-breakdown-list" class="category-breakdown-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <h3 class="section-title">Recent Sessions</h3>
+        <div id="recent-sessions-list" class="recent-sessions-list">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- 6. PROFILE & SETTINGS TAB SCREEN -->
+      <section id="screen-profile" class="screen screen-profile hidden">
+        <header class="app-header">
+          <h2>Profile & Settings</h2>
+        </header>
+
+        <!-- Profile Card -->
+        <div class="card profile-header-card">
+          <div class="avatar-lg" id="profile-avatar-char">A</div>
+          <div class="profile-meta">
+            <div class="flex-align">
+              <h3 id="profile-display-name">Aspirant</h3>
+              <button id="btn-edit-name" class="btn-icon">✏️</button>
+            </div>
+            <span class="badge-level" id="profile-level-badge">Level: Beginner</span>
+          </div>
+        </div>
+
+        <!-- 3-Wrong Restart Rule Card -->
+        <div class="card">
+          <div class="switch-row">
+            <div>
+              <strong>3-Wrong Restart Rule</strong>
+              <p class="text-sub">Enforces strict competitive discipline: restarts session if mistakes hit threshold.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-three-wrong" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div id="threshold-control-row" class="slider-control-group">
+            <div class="flex-between">
+              <span>Mistake Threshold</span>
+              <strong id="threshold-display" style="color:var(--error-red);">3 Mistakes</strong>
+            </div>
+            <input type="range" id="slider-threshold" min="1" max="10" value="3">
+          </div>
+        </div>
+
+        <!-- Target Exams -->
+        <div class="card">
+          <strong>Target Examinations</strong>
+          <p class="text-sub mb-10">Select all competitive exams you are preparing for.</p>
+          <div class="chip-group" id="profile-exams-group">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Preferences -->
+        <div class="card">
+          <strong>Preferences</strong>
+          <div class="pref-row flex-between">
+            <span>Daily Goal Target</span>
+            <select id="select-daily-goal" class="custom-select">
+              <option value="5">5 mins/day</option>
+              <option value="10" selected>10 mins/day</option>
+              <option value="15">15 mins/day</option>
+              <option value="20">20 mins/day</option>
+              <option value="30">30 mins/day</option>
+            </select>
+          </div>
+          <hr class="divider">
+          <div class="switch-row">
+            <span>Sound Effects (Game Audio)</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-sound" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <hr class="divider">
+          <div class="switch-row">
+            <span>Haptic Feedback</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-haptics" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Data Management -->
+        <div class="card">
+          <strong>Data Management</strong>
+          <div class="action-list">
+            <button id="btn-clear-history" class="btn-danger-outline full-width">Clear Session History</button>
+            <button id="btn-reset-all" class="btn-danger-outline full-width">Reset All Data & Settings</button>
+          </div>
+        </div>
+
+        <p class="app-version-footer">CALCUP v1.0.0 • Think Fast. Calculate Faster.</p>
+      </section>
+
+      <!-- 7. PRACTICE CONFIGURATION SCREEN -->
+      <section id="screen-config" class="screen screen-config hidden">
+        <header class="app-header-nav">
+          <button id="btn-config-back" class="btn-back">←</button>
+          <h2 id="config-title">Basic Arithmetic</h2>
+          <div style="width:36px;"></div>
+        </header>
+
+        <div class="card config-card">
+          <h3>Difficulty</h3>
+          <div class="chip-group" id="config-difficulty">
+            <button class="chip" data-val="Easy">Easy</button>
+            <button class="chip active" data-val="Medium">Medium</button>
+            <button class="chip" data-val="Hard">Hard</button>
+          </div>
+
+          <div class="slider-control-group">
+            <div class="flex-between">
+              <h3>Timer Duration</h3>
+              <strong id="config-timer-val" style="color:var(--primary-orange);">60 s</strong>
+            </div>
+            <input type="range" id="config-timer-slider" min="30" max="300" step="30" value="60">
+          </div>
+
+          <div class="slider-control-group">
+            <div class="flex-between">
+              <h3>Question Count</h3>
+              <strong id="config-count-val">20 Qs</strong>
+            </div>
+            <input type="range" id="config-count-slider" min="10" max="50" step="10" value="20">
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+        <button id="btn-start-session" class="btn-primary full-width btn-xl">Start Practice</button>
+      </section>
+
+      <!-- 8. ACTIVE PRACTICE SESSION SCREEN (Standard Mode) -->
+      <section id="screen-session" class="screen screen-session hidden">
+        <header class="session-header">
+          <span id="session-category-label" class="session-cat-pill">Basic Arithmetic</span>
+          <div id="session-timer-pill" class="session-timer-pill">
+            <span class="timer-icon">⏱️</span>
+            <strong id="session-timer-text">01:00</strong>
+          </div>
+        </header>
+
+        <!-- Question Tracker & Hearts Indicator -->
+        <div class="session-subbar flex-between">
+          <span id="session-q-counter" class="text-sub">Question 1 of 20</span>
+          <div id="session-hearts" class="hearts-row">
+            <span class="heart active">❤️</span>
+            <span class="heart active">❤️</span>
+            <span class="heart active">❤️</span>
+          </div>
+        </div>
+
+        <div class="progress-bar-bg session-progress">
+          <div id="session-progress-fill" class="progress-bar-fill" style="width: 5%;"></div>
+        </div>
+
+        <!-- Giant Math Question Card -->
+        <div class="card math-display-card">
+          <h1 id="session-expression" class="math-expression">42 + 27 = ?</h1>
+        </div>
+
+        <div class="spacer"></div>
+
+        <!-- 2x2 Answer Grid -->
+        <div class="answers-grid" id="session-options-grid">
+          <!-- Dynamically populated buttons -->
+        </div>
+      </section>
+
+      <!-- 9. ACTIVE MENTAL CALCULATION SCREEN (Sequential Flashing Mode) -->
+      <section id="screen-mental" class="screen screen-mental hidden">
+        <header class="session-header">
+          <span class="session-cat-pill">Mental Calculation</span>
+          <div class="session-timer-pill">
+            <span class="timer-icon">⏱️</span>
+            <strong id="mental-timer-text">01:00</strong>
+          </div>
+        </header>
+
+        <div class="session-subbar flex-between">
+          <span id="mental-q-counter" class="text-sub">Question 1 of 20</span>
+          <div id="mental-hearts" class="hearts-row">
+            <span class="heart active">❤️</span>
+            <span class="heart active">❤️</span>
+            <span class="heart active">❤️</span>
+          </div>
+        </div>
+
+        <div class="progress-bar-bg session-progress">
+          <div id="mental-progress-fill" class="progress-bar-fill" style="width: 5%;"></div>
+        </div>
+
+        <!-- Flashing Controls -->
+        <div class="flex-between mental-controls-row">
+          <div class="flex-align">
+            <span class="text-sub" style="font-size:12px;">Flash Speed: </span>
+            <div class="pill-group" id="mental-speed-group">
+              <button class="pill-sm" data-speed="1.0">1.0s</button>
+              <button class="pill-sm active" data-speed="1.4">1.4s</button>
+              <button class="pill-sm" data-speed="1.8">1.8s</button>
+            </div>
+          </div>
+          <button id="btn-mental-replay" class="btn-text-sm hidden">↺ Replay</button>
+        </div>
+
+        <!-- Flashing Step Box -->
+        <div class="card mental-display-card">
+          <span id="mental-step-badge" class="step-badge">Step 1 of 4</span>
+          <h1 id="mental-step-text" class="mental-number">34</h1>
+          <p id="mental-prompt-sub" class="text-sub hidden">What is the final result?</p>
+        </div>
+
+        <div class="spacer"></div>
+
+        <!-- Options Grid (Revealed after sequence finishes) -->
+        <div class="answers-grid dimmed" id="mental-options-grid">
+          <!-- Dynamically populated buttons -->
+        </div>
+      </section>
+
+      <!-- 10. RESULTS SCREEN -->
+      <section id="screen-results" class="screen screen-results hidden">
+        <div class="results-center">
+          <div class="trophy-badge">🏆</div>
+          <h2>Session Complete!</h2>
+          <p id="result-category-sub" class="text-sub">Basic Arithmetic</p>
+
+          <div class="card results-card">
+            <div class="stat-row">
+              <span class="stat-lbl">Total Score</span>
+              <strong id="res-score" class="stat-val color-orange">180 pts</strong>
+            </div>
+            <hr class="divider">
+            <div class="stat-row">
+              <span class="stat-lbl">Correct Answers</span>
+              <strong id="res-correct" class="stat-val color-green">18 / 20</strong>
+            </div>
+            <hr class="divider">
+            <div class="stat-row">
+              <span class="stat-lbl">Accuracy</span>
+              <strong id="res-accuracy" class="stat-val color-blue">90.0%</strong>
+            </div>
+            <hr class="divider">
+            <div class="stat-row">
+              <span class="stat-lbl">Avg Speed</span>
+              <strong id="res-speed" class="stat-val">2.5 s/Q</strong>
+            </div>
+          </div>
+
+          <div class="results-actions">
+            <button id="btn-review-answers" class="btn-secondary full-width">🔍 Review Answers & Explanations</button>
+            <button id="btn-practice-again" class="btn-primary full-width">↺ Practice Again</button>
+            <button id="btn-results-home" class="btn-outline full-width">Return Home</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 11. REVIEW SCREEN -->
+      <section id="screen-review" class="screen screen-review hidden">
+        <header class="app-header-nav">
+          <button id="btn-review-back" class="btn-back">←</button>
+          <h2>Review Answers</h2>
+          <div style="width:36px;"></div>
+        </header>
+
+        <div class="review-filter-row">
+          <button class="chip active" data-filter="all" id="chip-filter-all">All (20)</button>
+          <button class="chip" data-filter="wrong" id="chip-filter-wrong" style="background:var(--pastel-pink);">Wrong (2)</button>
+          <button class="chip" data-filter="correct" id="chip-filter-correct" style="background:var(--pastel-green);">Correct (18)</button>
+        </div>
+
+        <div id="review-cards-list" class="review-cards-list">
+          <!-- Dynamically populated question cards -->
+        </div>
+
+        <div class="review-bottom">
+          <button id="btn-review-done" class="btn-primary full-width">Return to Home</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <nav id="bottom-nav" class="bottom-nav">
+      <button class="nav-item active" data-tab="home">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home</span>
+      </button>
+      <button class="nav-item" data-tab="practice">
+        <span class="nav-icon">⏱️</span>
+        <span class="nav-label">Practice</span>
+      </button>
+      <button class="nav-item" data-tab="progress">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Progress</span>
+      </button>
+      <button class="nav-item" data-tab="profile">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label">Profile</span>
+      </button>
+    </nav>
+
+    <!-- RESTART MISTAKE BANNER TOAST -->
+    <div id="toast-restart" class="toast-restart hidden">
+      <span class="toast-icon">⚠️</span>
+      <div id="toast-restart-msg">3 mistakes! Let's try again. Every retry makes you sharper.</div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
