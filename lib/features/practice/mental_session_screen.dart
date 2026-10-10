@@ -111,29 +111,7 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
     });
   }
 
-  void _handleRestart() {
-    _sessionTimer?.cancel();
-    _stepTimer?.cancel();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          "$_wrongThreshold mistakes! Let's try again. Every retry strengthens your mental stamina.",
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: AppColors.errorRed,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _startSession();
-        });
-      }
-    });
-  }
-
-  void _finalizeSession() {
+  void _finalizeSession({bool terminatedDueToMistakes = false}) {
     _sessionTimer?.cancel();
     _stepTimer?.cancel();
 
@@ -145,6 +123,7 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
       'totalQuestions': _questions.length,
       'durationSeconds': widget.config.timerSeconds - _remainingSeconds,
       'attempts': _attempts,
+      'terminated': terminatedDueToMistakes,
     };
 
     context.pushReplacement('/results', extra: result);
@@ -181,9 +160,9 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
 
     if (!mounted) return;
 
-    if (_threeWrongRestartEnabled && _consecutiveWrongCount >= _wrongThreshold) {
+    if (_wrongCount >= _wrongThreshold || (_threeWrongRestartEnabled && _consecutiveWrongCount >= _wrongThreshold)) {
       _isSubmitting = false;
-      _handleRestart();
+      _finalizeSession(terminatedDueToMistakes: true);
       return;
     }
 

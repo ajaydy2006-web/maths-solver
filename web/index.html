@@ -126,7 +126,7 @@
             <div class="summary-card">
               <div class="sum-row"><span>Starting Tier:</span> <strong id="sum-level">Beginner</strong></div>
               <div class="sum-row"><span>Daily Goal:</span> <strong id="sum-goal">10 mins/day</strong></div>
-              <div class="sum-row"><span>Rule:</span> <strong style="color:var(--error-red);">3 Mistakes = Retry</strong></div>
+              <div class="sum-row"><span>Rule:</span> <strong style="color:var(--error-red);">3 Mistakes = Game Over</strong></div>
             </div>
           </div>
         </div>
@@ -269,8 +269,8 @@
         <div class="card">
           <div class="switch-row">
             <div>
-              <strong>3-Wrong Restart Rule</strong>
-              <p class="text-sub">Enforces strict competitive discipline: restarts session if mistakes hit threshold.</p>
+              <strong>3-Wrong Termination Rule</strong>
+              <p class="text-sub">Ends game after 3 mistakes and displays your score and correct answers.</p>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" id="toggle-three-wrong" checked>
@@ -465,9 +465,14 @@
 
       <!-- 10. RESULTS SCREEN -->
       <section id="screen-results" class="screen screen-results hidden">
+        <header class="app-header-nav" style="border:none; padding:12px 16px 0 16px;">
+          <button id="btn-results-nav-back" class="btn-back">←</button>
+          <h2 id="res-header-title">Results</h2>
+          <div style="width:36px;"></div>
+        </header>
         <div class="results-center">
-          <div class="trophy-badge">🏆</div>
-          <h2>Session Complete!</h2>
+          <div class="trophy-badge" id="res-badge">🏆</div>
+          <h2 id="res-title">Session Complete!</h2>
           <p id="result-category-sub" class="text-sub">Basic Arithmetic</p>
 
           <div class="card results-card">
@@ -493,9 +498,9 @@
           </div>
 
           <div class="results-actions">
+            <button id="btn-results-back" class="btn-primary full-width">← Back to Home</button>
             <button id="btn-review-answers" class="btn-secondary full-width">🔍 Review Answers & Explanations</button>
-            <button id="btn-practice-again" class="btn-primary full-width">↺ Practice Again</button>
-            <button id="btn-results-home" class="btn-outline full-width">Return Home</button>
+            <button id="btn-practice-again" class="btn-outline full-width">↺ Practice Again</button>
           </div>
         </div>
       </section>
@@ -531,10 +536,6 @@
         <span class="nav-icon">🏠</span>
         <span class="nav-label">Home</span>
       </button>
-      <button class="nav-item" data-tab="practice">
-        <span class="nav-icon">⏱️</span>
-        <span class="nav-label">Practice</span>
-      </button>
       <button class="nav-item" data-tab="progress">
         <span class="nav-icon">📊</span>
         <span class="nav-label">Progress</span>
@@ -544,12 +545,6 @@
         <span class="nav-label">Profile</span>
       </button>
     </nav>
-
-    <!-- RESTART MISTAKE BANNER TOAST -->
-    <div id="toast-restart" class="toast-restart hidden">
-      <span class="toast-icon">⚠️</span>
-      <div id="toast-restart-msg">3 mistakes! Let's try again. Every retry makes you sharper.</div>
-    </div>
 
   </div>
 

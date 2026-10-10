@@ -70,28 +70,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     }
   }
 
-  void _handleRestart() {
-    _timer?.cancel();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          "$_wrongThreshold mistakes! Let's try again. Every retry makes you sharper.",
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: AppColors.errorRed,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _startSession();
-        });
-      }
-    });
-  }
-
-  void _finalizeSession() {
+  void _finalizeSession({bool terminatedDueToMistakes = false}) {
     _timer?.cancel();
     
     final result = {
@@ -102,6 +81,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       'totalQuestions': _questions.length,
       'durationSeconds': widget.config.timerSeconds - _remainingSeconds,
       'attempts': _attempts,
+      'terminated': terminatedDueToMistakes,
     };
     
     context.pushReplacement('/results', extra: result);
@@ -138,9 +118,9 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     
     if (!mounted) return;
 
-    if (_threeWrongRestartEnabled && _consecutiveWrongCount >= _wrongThreshold) {
+    if (_wrongCount >= _wrongThreshold || (_threeWrongRestartEnabled && _consecutiveWrongCount >= _wrongThreshold)) {
       _isSubmitting = false;
-      _handleRestart();
+      _finalizeSession(terminatedDueToMistakes: true);
       return;
     }
 

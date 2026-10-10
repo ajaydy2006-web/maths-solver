@@ -486,8 +486,6 @@ class AppController {
     if (tab === 'home') {
       this.refreshHomeStats();
       this.showScreen('screen-home');
-    } else if (tab === 'practice') {
-      this.showScreen('screen-practice-tab');
     } else if (tab === 'progress') {
       this.renderProgressDashboard();
       this.showScreen('screen-progress');
@@ -742,9 +740,10 @@ class AppController {
     }
 
     setTimeout(() => {
-      // 3-wrong answer restart rule check
-      if (store.prefs.threeWrongRestartEnabled && this.consecutiveWrong >= store.prefs.wrongAnswerThreshold) {
-        this.triggerMistakeRestart();
+      // 3-wrong answer termination rule check
+      const threshold = store.prefs.wrongAnswerThreshold || 3;
+      if (this.sessionWrong >= threshold || (store.prefs.threeWrongRestartEnabled && this.consecutiveWrong >= threshold)) {
+        this.terminateMistakeSession();
         return;
       }
 
@@ -756,32 +755,24 @@ class AppController {
           this.renderCurrentStandardQuestion();
         }
       } else {
-        this.finalizeSession();
+        this.finalizeSession(false);
       }
     }, 400);
   }
 
-  triggerMistakeRestart() {
+  terminateMistakeSession() {
     clearInterval(this.sessionTimer);
     clearInterval(this.mentalStepTimer);
-
-    const toast = document.getElementById('toast-restart');
-    const msg = document.getElementById('toast-restart-msg');
-    msg.textContent = `${store.prefs.wrongAnswerThreshold} mistakes! Let's try again. Every retry makes you sharper.`;
-    toast.classList.remove('hidden');
-
-    setTimeout(() => {
-      toast.classList.add('hidden');
-      this.startSession();
-    }, 2000);
+    sounds.playWrong();
+    this.finalizeSession(true);
   }
 
-  finalizeSession() {
+  finalizeSession(terminatedDueToMistakes = false) {
     clearInterval(this.sessionTimer);
     clearInterval(this.mentalStepTimer);
 
     const total = this.sessionQuestions.length;
-    const duration = this.activeConfig.timerSeconds - this.remainingSeconds;
+    const duration = Math.max(1, this.activeConfig.timerSeconds - this.remainingSeconds);
     const score = this.sessionCorrect * 10;
 
     const sessionRecord = {
@@ -792,19 +783,36 @@ class AppController {
       incorrectAnswers: this.sessionWrong,
       totalQuestions: total,
       durationSeconds: duration,
-      attempts: this.attempts
+      attempts: this.attempts,
+      terminated: terminatedDueToMistakes
     };
 
     store.saveSession(sessionRecord);
-    sounds.playFanfare();
+    if (!terminatedDueToMistakes) {
+      sounds.playFanfare();
+    }
 
     // Populate Results
-    document.getElementById('result-category-sub').textContent = this.activeConfig.category;
+    const badgeEl = document.getElementById('res-badge');
+    const titleEl = document.getElementById('res-title');
+    const catSubEl = document.getElementById('result-category-sub');
+
+    if (terminatedDueToMistakes) {
+      if (badgeEl) badgeEl.textContent = '🛑';
+      if (titleEl) titleEl.textContent = 'Game Over';
+      if (catSubEl) catSubEl.textContent = `${this.activeConfig.category} • Terminated (3 Mistakes)`;
+    } else {
+      if (badgeEl) badgeEl.textContent = '🏆';
+      if (titleEl) titleEl.textContent = 'Session Complete!';
+      if (catSubEl) catSubEl.textContent = this.activeConfig.category;
+    }
+
     document.getElementById('res-score').textContent = `${score} pts`;
-    document.getElementById('res-correct').textContent = `${this.sessionCorrect} / ${total}`;
-    const acc = total > 0 ? ((this.sessionCorrect / total) * 100).toFixed(1) : '0';
+    document.getElementById('res-correct').textContent = `${this.sessionCorrect} Correct (out of ${total})`;
+    const attempted = this.attempts.length;
+    const acc = attempted > 0 ? ((this.sessionCorrect / attempted) * 100).toFixed(1) : '0';
     document.getElementById('res-accuracy').textContent = `${acc}%`;
-    const spd = total > 0 ? (duration / total).toFixed(1) : '0';
+    const spd = attempted > 0 ? (duration / attempted).toFixed(1) : '0';
     document.getElementById('res-speed').textContent = `${spd} s/Q`;
 
     this.showScreen('screen-results');
@@ -1017,9 +1025,18 @@ class AppController {
     document.getElementById('btn-practice-again').addEventListener('click', () => {
       this.startSession();
     });
-    document.getElementById('btn-results-home').addEventListener('click', () => {
-      this.switchTab('home');
-    });
+    const resBack = document.getElementById('btn-results-back');
+    if (resBack) {
+      resBack.addEventListener('click', () => {
+        this.switchTab('home');
+      });
+    }
+    const resNavBack = document.getElementById('btn-results-nav-back');
+    if (resNavBack) {
+      resNavBack.addEventListener('click', () => {
+        this.switchTab('home');
+      });
+    }
 
     // Review Filters & Back
     document.getElementById('btn-review-back').addEventListener('click', () => {
