@@ -53,26 +53,19 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
     _currentIndex = 0;
     _correctCount = 0;
     _wrongCount = 0;
-    _consecutiveWrongCount = 0;
     _attempts.clear();
-    _remainingSeconds = widget.config.timerSeconds;
+    _remainingSeconds = 0;
 
     _sessionTimer?.cancel();
-    if (_remainingSeconds > 0) {
-      _sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (!mounted) {
-          timer.cancel();
-          return;
-        }
-        setState(() {
-          if (_remainingSeconds > 0) {
-            _remainingSeconds--;
-          } else {
-            _finalizeSession();
-          }
-        });
+    _sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _remainingSeconds++;
       });
-    }
+    });
 
     _playCurrentQuestionSequence();
   }
@@ -120,8 +113,8 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
       'score': _correctCount * 10,
       'correctAnswers': _correctCount,
       'incorrectAnswers': _wrongCount,
-      'totalQuestions': _questions.length,
-      'durationSeconds': widget.config.timerSeconds - _remainingSeconds,
+      'totalQuestions': _attempts.length,
+      'durationSeconds': _remainingSeconds,
       'attempts': _attempts,
       'terminated': terminatedDueToMistakes,
     };
@@ -164,16 +157,14 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
       return;
     }
 
-    if (_currentIndex < _questions.length - 1) {
-      setState(() {
-        _currentIndex++;
-        _isSubmitting = false;
-      });
-      _playCurrentQuestionSequence();
-    } else {
+    setState(() {
+      _currentIndex++;
+      if (_currentIndex >= _questions.length) {
+        _questions.addAll(QuestionGenerator.generateQuestions(widget.config));
+      }
       _isSubmitting = false;
-      _finalizeSession();
-    }
+    });
+    _playCurrentQuestionSequence();
   }
 
   @override
@@ -232,12 +223,12 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Progress Bar & Question Counter
+              // Question Counter & Lives Indicator
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Question ${_currentIndex + 1} of ${_questions.length}",
+                    "Question ${_currentIndex + 1}",
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
                   ),
                   if (_threeWrongRestartEnabled)
@@ -257,15 +248,7 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: (_currentIndex) / _questions.length,
-                backgroundColor: AppColors.surfacePrimary,
-                color: AppColors.pastelPurple,
-                minHeight: 8,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               // Speed & Replay Controls
               Row(

@@ -566,24 +566,20 @@ class AppController {
     this.sessionQuestions = QuestionGenerator.generate(
       this.activeConfig.category,
       this.activeConfig.difficulty,
-      this.activeConfig.questionCount
+      10
     );
     this.sessionIndex = 0;
     this.sessionCorrect = 0;
     this.sessionWrong = 0;
-    this.consecutiveWrong = 0;
     this.attempts = [];
-    this.remainingSeconds = this.activeConfig.timerSeconds;
+    this.elapsedSeconds = 0;
     this.isSubmitting = false;
 
     clearInterval(this.sessionTimer);
+    this.updateTimerDisplays();
     this.sessionTimer = setInterval(() => {
-      if (this.remainingSeconds > 0) {
-        this.remainingSeconds--;
-        this.updateTimerDisplays();
-      } else {
-        this.finalizeSession();
-      }
+      this.elapsedSeconds++;
+      this.updateTimerDisplays();
     }, 1000);
 
     if (this.activeConfig.category === 'Mental Calculation') {
@@ -594,8 +590,8 @@ class AppController {
   }
 
   updateTimerDisplays() {
-    const mins = Math.floor(this.remainingSeconds / 60);
-    const secs = this.remainingSeconds % 60;
+    const mins = Math.floor(this.elapsedSeconds / 60);
+    const secs = this.elapsedSeconds % 60;
     const str = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     const std = document.getElementById('session-timer-text');
     const mtl = document.getElementById('mental-timer-text');
@@ -611,12 +607,8 @@ class AppController {
 
   renderCurrentStandardQuestion() {
     const q = this.sessionQuestions[this.sessionIndex];
-    document.getElementById('session-q-counter').textContent = `Question ${this.sessionIndex + 1} of ${this.sessionQuestions.length}`;
+    document.getElementById('session-q-counter').textContent = `Question ${this.sessionIndex + 1}`;
     
-    // Progress
-    const pct = ((this.sessionIndex) / this.sessionQuestions.length) * 100;
-    document.getElementById('session-progress-fill').style.width = `${pct}%`;
-
     // Hearts
     this.renderHearts('session-hearts');
 
@@ -663,9 +655,7 @@ class AppController {
     const q = this.sessionQuestions[this.sessionIndex];
     const steps = q.mentalSteps || [q.expr];
 
-    document.getElementById('mental-q-counter').textContent = `Question ${this.sessionIndex + 1} of ${this.sessionQuestions.length}`;
-    const pct = (this.sessionIndex / this.sessionQuestions.length) * 100;
-    document.getElementById('mental-progress-fill').style.width = `${pct}%`;
+    document.getElementById('mental-q-counter').textContent = `Question ${this.sessionIndex + 1}`;
     this.renderHearts('mental-hearts');
 
     const badge = document.getElementById('mental-step-badge');
@@ -748,15 +738,21 @@ class AppController {
         return;
       }
 
-      if (this.sessionIndex < this.sessionQuestions.length - 1) {
-        this.sessionIndex++;
-        if (this.activeConfig.category === 'Mental Calculation') {
-          this.playMentalQuestion();
-        } else {
-          this.renderCurrentStandardQuestion();
-        }
+      // Continue asking questions endlessly until lives are lost
+      this.sessionIndex++;
+      if (this.sessionIndex >= this.sessionQuestions.length) {
+        const moreQuestions = QuestionGenerator.generate(
+          this.activeConfig.category,
+          this.activeConfig.difficulty,
+          10
+        );
+        this.sessionQuestions.push(...moreQuestions);
+      }
+
+      if (this.activeConfig.category === 'Mental Calculation') {
+        this.playMentalQuestion();
       } else {
-        this.finalizeSession(false);
+        this.renderCurrentStandardQuestion();
       }
     }, 400);
   }
@@ -772,8 +768,8 @@ class AppController {
     clearInterval(this.sessionTimer);
     clearInterval(this.mentalStepTimer);
 
-    const total = this.sessionQuestions.length;
-    const duration = Math.max(1, this.activeConfig.timerSeconds - this.remainingSeconds);
+    const total = this.attempts.length;
+    const duration = Math.max(1, this.elapsedSeconds);
     const score = this.sessionCorrect * 10;
 
     const sessionRecord = {
@@ -1001,10 +997,14 @@ class AppController {
       document.getElementById('config-timer-val').textContent = `${e.target.value} s`;
     });
 
-    document.getElementById('config-count-slider').addEventListener('input', e => {
-      this.activeConfig.questionCount = parseInt(e.target.value);
-      document.getElementById('config-count-val').textContent = `${e.target.value} Qs`;
-    });
+    const countSlider = document.getElementById('config-count-slider');
+    if (countSlider) {
+      countSlider.addEventListener('input', e => {
+        this.activeConfig.questionCount = parseInt(e.target.value);
+        const countVal = document.getElementById('config-count-val');
+        if (countVal) countVal.textContent = `${e.target.value} Qs`;
+      });
+    }
 
     // Mental Flashing Controls
     document.querySelectorAll('#mental-speed-group .pill-sm').forEach(p => {

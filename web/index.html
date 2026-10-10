@@ -362,12 +362,12 @@
             <input type="range" id="config-timer-slider" min="30" max="300" step="30" value="60">
           </div>
 
-          <div class="slider-control-group">
-            <div class="flex-between">
-              <h3>Question Count</h3>
-              <strong id="config-count-val">20 Qs</strong>
+          <div style="background: rgba(255,146,46,0.1); border-radius: var(--radius-md); padding: 12px 14px; margin-top: 14px; display:flex; align-items:center; gap:10px;">
+            <span style="font-size:22px;">⚡</span>
+            <div>
+              <strong style="font-size:14px; color:var(--text-primary);">Endless Survival Mode</strong>
+              <p class="text-sub" style="font-size:12px;">Questions continue endlessly until all 3 lives are lost.</p>
             </div>
-            <input type="range" id="config-count-slider" min="10" max="50" step="10" value="20">
           </div>
         </div>
 
@@ -381,22 +381,18 @@
           <span id="session-category-label" class="session-cat-pill">Basic Arithmetic</span>
           <div id="session-timer-pill" class="session-timer-pill">
             <span class="timer-icon">⏱️</span>
-            <strong id="session-timer-text">01:00</strong>
+            <strong id="session-timer-text">00:00</strong>
           </div>
         </header>
 
         <!-- Question Tracker & Hearts Indicator -->
         <div class="session-subbar flex-between">
-          <span id="session-q-counter" class="text-sub">Question 1 of 20</span>
+          <span id="session-q-counter" class="text-sub">Question 1</span>
           <div id="session-hearts" class="hearts-row">
             <span class="heart active">❤️</span>
             <span class="heart active">❤️</span>
             <span class="heart active">❤️</span>
           </div>
-        </div>
-
-        <div class="progress-bar-bg session-progress">
-          <div id="session-progress-fill" class="progress-bar-fill" style="width: 5%;"></div>
         </div>
 
         <!-- Giant Math Question Card -->
@@ -418,21 +414,17 @@
           <span class="session-cat-pill">Mental Calculation</span>
           <div class="session-timer-pill">
             <span class="timer-icon">⏱️</span>
-            <strong id="mental-timer-text">01:00</strong>
+            <strong id="mental-timer-text">00:00</strong>
           </div>
         </header>
 
         <div class="session-subbar flex-between">
-          <span id="mental-q-counter" class="text-sub">Question 1 of 20</span>
+          <span id="mental-q-counter" class="text-sub">Question 1</span>
           <div id="mental-hearts" class="hearts-row">
             <span class="heart active">❤️</span>
             <span class="heart active">❤️</span>
             <span class="heart active">❤️</span>
           </div>
-        </div>
-
-        <div class="progress-bar-bg session-progress">
-          <div id="mental-progress-fill" class="progress-bar-fill" style="width: 5%;"></div>
         </div>
 
         <!-- Flashing Controls -->

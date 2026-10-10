@@ -47,27 +47,20 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     _currentIndex = 0;
     _correctCount = 0;
     _wrongCount = 0;
-    _consecutiveWrongCount = 0;
     _attempts.clear();
-    _remainingSeconds = widget.config.timerSeconds;
+    _remainingSeconds = 0;
     _questionStartTime = DateTime.now();
     
     _timer?.cancel();
-    if (_remainingSeconds > 0) {
-      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (!mounted) {
-          timer.cancel();
-          return;
-        }
-        setState(() {
-          if (_remainingSeconds > 0) {
-            _remainingSeconds--;
-          } else {
-            _finalizeSession();
-          }
-        });
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _remainingSeconds++;
       });
-    }
+    });
   }
 
   void _finalizeSession({bool terminatedDueToMistakes = false}) {
@@ -78,8 +71,8 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       'score': _correctCount * 10,
       'correctAnswers': _correctCount,
       'incorrectAnswers': _wrongCount,
-      'totalQuestions': _questions.length,
-      'durationSeconds': widget.config.timerSeconds - _remainingSeconds,
+      'totalQuestions': _attempts.length,
+      'durationSeconds': _remainingSeconds,
       'attempts': _attempts,
       'terminated': terminatedDueToMistakes,
     };
@@ -122,16 +115,14 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       return;
     }
 
-    if (_currentIndex < _questions.length - 1) {
-      setState(() {
-        _currentIndex++;
-        _questionStartTime = DateTime.now();
-        _isSubmitting = false;
-      });
-    } else {
+    setState(() {
+      _currentIndex++;
+      if (_currentIndex >= _questions.length) {
+        _questions.addAll(QuestionGenerator.generateQuestions(widget.config));
+      }
+      _questionStartTime = DateTime.now();
       _isSubmitting = false;
-      _finalizeSession();
-    }
+    });
   }
 
   @override
@@ -190,7 +181,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Question ${_currentIndex + 1} of ${_questions.length}",
+                    "Question ${_currentIndex + 1}",
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
                   ),
                   if (_threeWrongRestartEnabled)
@@ -210,13 +201,6 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: (_currentIndex) / _questions.length,
-                backgroundColor: AppColors.surfacePrimary,
-                color: AppColors.pastelBlue,
-                minHeight: 8,
-                borderRadius: BorderRadius.circular(4),
               const SizedBox(height: 12),
               Expanded(
                 child: Center(
