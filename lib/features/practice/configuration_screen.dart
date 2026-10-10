@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
+import 'widgets/calendar_time_selector.dart';
 
 class ConfigurationScreen extends ConsumerStatefulWidget {
   final String category;
@@ -29,7 +30,7 @@ class _ConfigurationScreenState extends ConsumerState<ConfigurationScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -68,20 +69,36 @@ class _ConfigurationScreenState extends ConsumerState<ConfigurationScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text("Timer Duration", style: Theme.of(context).textTheme.titleLarge),
-                          Text("$_timerSeconds s", style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryOrange)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEF4444).withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              "$_timerSeconds s",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFEF4444),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                      Slider(
-                        value: _timerSeconds.toDouble(),
-                        min: 30,
-                        max: 300,
-                        divisions: 9,
-                        label: '$_timerSeconds s',
-                        activeColor: AppColors.primaryOrange,
-                        inactiveColor: AppColors.pastelPink,
-                        onChanged: (val) {
-                          setState(() => _timerSeconds = val.toInt());
-                        },
+                      const SizedBox(height: 10),
+                      // Calendar-inspired time selector
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF7F8FA),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFEAEBED), width: 1),
+                        ),
+                        child: CalendarTimeSelector(
+                          selectedSeconds: _timerSeconds,
+                          onTimeChanged: (val) {
+                            setState(() => _timerSeconds = val);
+                          },
+                        ),
                       ),
                       const SizedBox(height: 24),
                       Row(
@@ -107,7 +124,7 @@ class _ConfigurationScreenState extends ConsumerState<ConfigurationScreen> {
                   ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 28),
               SizedBox(
                 height: 56,
                 child: ElevatedButton(
