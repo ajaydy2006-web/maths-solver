@@ -21,13 +21,46 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify that key duration options are present
+      // Verify that key duration options are present including starting 3s option
+      expect(find.text('3'), findsOneWidget);
       expect(find.text('60'), findsOneWidget);
       expect(find.text('30'), findsOneWidget);
       expect(find.text('15'), findsOneWidget);
 
       // Verify active badge label for 60s
       expect(find.text('60 Seconds • 1 Minute'), findsOneWidget);
+    });
+
+    testWidgets('selecting 3s option updates selection and label properly', (tester) async {
+      int selectedTime = 60;
+
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) {
+            return MaterialApp(
+              home: Scaffold(
+                body: CalendarTimeSelector(
+                  selectedSeconds: selectedTime,
+                  onTimeChanged: (newVal) {
+                    setState(() {
+                      selectedTime = newVal;
+                    });
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final threeItem = find.text('3');
+      expect(threeItem, findsOneWidget);
+      await tester.tap(threeItem);
+      await tester.pumpAndSettle();
+
+      expect(selectedTime, equals(3));
+      expect(find.text('3 Seconds • Instant Flash'), findsOneWidget);
     });
 
     testWidgets('tapping an unselected time option triggers onTimeChanged and updates UI', (tester) async {

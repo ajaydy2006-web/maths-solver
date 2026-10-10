@@ -33,6 +33,24 @@ class CalendarTimeSelector extends StatefulWidget {
 
   static const List<CalcupTimeOption> defaultOptions = [
     CalcupTimeOption(
+      seconds: 3,
+      topLabel: '3s',
+      displayValue: '3',
+      label: '3 Seconds • Instant Flash',
+    ),
+    CalcupTimeOption(
+      seconds: 5,
+      topLabel: '5s',
+      displayValue: '5',
+      label: '5 Seconds • Ultra Speed',
+    ),
+    CalcupTimeOption(
+      seconds: 10,
+      topLabel: '10s',
+      displayValue: '10',
+      label: '10 Seconds • Quick Blitz',
+    ),
+    CalcupTimeOption(
       seconds: 15,
       topLabel: '15s',
       displayValue: '15',
