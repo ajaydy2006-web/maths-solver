@@ -217,28 +217,34 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                 color: AppColors.pastelBlue,
                 minHeight: 8,
                 borderRadius: BorderRadius.circular(4),
-              ),
-              const Spacer(),
-              Card(
-                color: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-                elevation: 4,
-                shadowColor: Colors.black.withOpacity(0.06),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 56.0, horizontal: 16.0),
-                  child: Center(
-                    child: Text(
-                      currentQuestion.displayExpression,
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        fontSize: 44,
-                        letterSpacing: 1.2,
+              const SizedBox(height: 12),
+              Expanded(
+                child: Center(
+                  child: Card(
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                    elevation: 3,
+                    shadowColor: Colors.black.withOpacity(0.06),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            currentQuestion.displayExpression,
+                            style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                              fontSize: 40,
+                              letterSpacing: 1.2,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 16),
               GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,

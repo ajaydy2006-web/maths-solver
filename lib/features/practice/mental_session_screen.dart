@@ -313,64 +313,69 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
                 ],
               ),
 
-              const Spacer(),
+              const SizedBox(height: 8),
 
               // Sequential Display Card
-              Center(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) {
-                    return ScaleTransition(
-                      scale: animation,
-                      child: FadeTransition(opacity: animation, child: child),
-                    );
-                  },
-                  child: Container(
-                    key: ValueKey<String>('step_${_currentStepIndex}_$_sequenceCompleted'),
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 60.0, horizontal: 20.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(32),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.pastelPurple.withOpacity(0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (!_sequenceCompleted)
-                          Text(
-                            "Step ${_currentStepIndex + 1} of ${steps.length}",
-                            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                          ),
-                        const SizedBox(height: 12),
-                        Text(
-                          currentDisplayStep,
-                          style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                                fontSize: 52,
-                                color: _sequenceCompleted ? AppColors.primaryOrange : AppColors.textPrimary,
-                              ),
-                          textAlign: TextAlign.center,
-                        ),
-                        if (_sequenceCompleted) ...[
-                          const SizedBox(height: 8),
-                          const Text(
-                            "What is the final answer?",
-                            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              Expanded(
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, animation) {
+                      return ScaleTransition(
+                        scale: animation,
+                        child: FadeTransition(opacity: animation, child: child),
+                      );
+                    },
+                    child: Container(
+                      key: ValueKey<String>('step_${_currentStepIndex}_$_sequenceCompleted'),
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 20.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.pastelPurple.withOpacity(0.2),
+                            blurRadius: 18,
+                            offset: const Offset(0, 6),
                           ),
                         ],
-                      ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!_sequenceCompleted)
+                            Text(
+                              "Step ${_currentStepIndex + 1} of ${steps.length}",
+                              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            ),
+                          const SizedBox(height: 8),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              currentDisplayStep,
+                              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                    fontSize: 44,
+                                    color: _sequenceCompleted ? AppColors.primaryOrange : AppColors.textPrimary,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          if (_sequenceCompleted) ...[
+                            const SizedBox(height: 6),
+                            const Text(
+                              "What is the final answer?",
+                              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
 
-              const Spacer(),
+              const SizedBox(height: 14),
 
               // Answer Options (Shown after sequence completes, or dimmed while flashing)
               AnimatedOpacity(

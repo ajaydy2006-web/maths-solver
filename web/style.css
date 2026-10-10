@@ -111,7 +111,20 @@ html, body {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding-bottom: 80px; /* Space for bottom nav */
+  padding-bottom: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+.main-content::-webkit-scrollbar {
+  width: 5px;
+}
+.main-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.main-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
 }
 
 /* SCREENS */
@@ -121,8 +134,21 @@ html, body {
   flex-direction: column;
   width: 100%;
   min-height: 100%;
+  box-sizing: border-box;
   opacity: 1;
   transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* Screens with bottom navigation need bottom padding so nav doesn't overlap */
+.screen-home,
+.screen-progress,
+.screen-profile {
+  padding-bottom: 84px;
+}
+
+.spacer {
+  flex: 1;
+  min-height: 8px;
 }
 
 .screen.hidden {
@@ -761,27 +787,43 @@ input[type="range"] {
   filter: none;
   opacity: 1;
 }
+/* SESSION SCREENS - FITS VIEWPORT PERFECTLY WITHOUT SCROLLING */
+.screen-session,
+.screen-mental {
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 12px;
+}
+
 .session-progress {
-  margin: 0 20px 16px;
+  margin: 0 18px 12px;
 }
 .math-display-card {
   background: white;
   border-radius: var(--radius-xl);
-  padding: 48px 16px;
-  margin: 0 20px;
+  padding: clamp(20px, 4vh, 44px) 16px;
+  margin: 0 18px;
   text-align: center;
   box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 110px;
 }
 .math-expression {
   font-family: var(--font-display);
-  font-size: 44px;
+  font-size: clamp(30px, 7vw, 44px);
   letter-spacing: 1px;
 }
 .answers-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-  padding: 0 20px 24px;
+  gap: 12px;
+  padding: 0 18px clamp(10px, 2vh, 20px);
   transition: opacity 0.3s;
 }
 .answers-grid.dimmed {
@@ -792,9 +834,9 @@ input[type="range"] {
   background: white;
   border: none;
   border-radius: var(--radius-md);
-  padding: 22px 10px;
+  padding: clamp(14px, 2.2vh, 22px) 10px;
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: clamp(20px, 4.5vw, 24px);
   color: var(--text-primary);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
@@ -844,11 +886,16 @@ input[type="range"] {
 .mental-display-card {
   background: white;
   border-radius: var(--radius-xl);
-  padding: 56px 16px;
-  margin: 0 20px;
+  padding: clamp(24px, 5vh, 48px) 16px;
+  margin: 0 18px;
   text-align: center;
   box-shadow: var(--shadow-lg);
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
 }
 .step-badge {
   font-size: 13px;
@@ -859,7 +906,7 @@ input[type="range"] {
 }
 .mental-number {
   font-family: var(--font-display);
-  font-size: 56px;
+  font-size: clamp(36px, 8vw, 54px);
   color: var(--text-primary);
   animation: numberPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -869,17 +916,23 @@ input[type="range"] {
 }
 
 /* RESULTS SCREEN */
+.screen-results {
+  min-height: 100%;
+  padding-bottom: 24px;
+}
 .results-center {
-  padding: 24px 20px;
+  padding: 12px 20px 24px;
   text-align: center;
   display: flex;
   flex-direction: column;
   justify-content: center;
   flex: 1;
+  width: 100%;
+  box-sizing: border-box;
 }
 .trophy-badge {
-  font-size: 72px;
-  margin-bottom: 12px;
+  font-size: 54px;
+  margin-bottom: 8px;
   animation: float 2s infinite ease-in-out;
 }
 @keyframes float {
@@ -888,10 +941,10 @@ input[type="range"] {
 }
 .results-center h2 {
   font-family: var(--font-display);
-  font-size: 32px;
+  font-size: clamp(24px, 5vw, 30px);
 }
 .results-card {
-  margin: 24px 0;
+  margin: 16px 0 20px;
   text-align: left;
 }
 .stat-row {
