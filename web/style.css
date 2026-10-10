@@ -106,6 +106,7 @@ html, body {
 /* MAIN VIEW CONTAINER */
 .main-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
@@ -114,6 +115,7 @@ html, body {
   padding-bottom: 0;
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  -webkit-overflow-scrolling: touch;
 }
 
 .main-content::-webkit-scrollbar {
@@ -139,11 +141,10 @@ html, body {
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
-/* Screens with bottom navigation need bottom padding so nav doesn't overlap */
 .screen-home,
 .screen-progress,
 .screen-profile {
-  padding-bottom: 84px;
+  padding-bottom: 24px;
 }
 
 .spacer {
@@ -507,7 +508,7 @@ html, body {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 14px;
-  padding: 0 20px 24px;
+  padding: 0 20px 36px;
 }
 .category-card {
   border-radius: var(--radius-lg);
@@ -1038,11 +1039,10 @@ input[type="range"] {
   padding: 20px;
 }
 
-/* BOTTOM NAVIGATION */
+/* BOTTOM NAVIGATION (In-flow layout so it never overlaps content) */
 .bottom-nav {
-  position: absolute;
-  bottom: 0;
-  left: 0;
+  position: relative;
+  flex-shrink: 0;
   width: 100%;
   height: 68px;
   background: var(--surface-primary);
@@ -1051,6 +1051,8 @@ input[type="range"] {
   justify-content: space-around;
   align-items: center;
   z-index: 50;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .nav-item {
   flex: 1;
