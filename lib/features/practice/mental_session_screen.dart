@@ -150,17 +150,15 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
 
     if (isCorrect) {
       _correctCount++;
-      _consecutiveWrongCount = 0;
     } else {
       _wrongCount++;
-      _consecutiveWrongCount++;
     }
 
     await Future.delayed(const Duration(milliseconds: 400));
 
     if (!mounted) return;
 
-    if (_wrongCount >= _wrongThreshold || (_threeWrongRestartEnabled && _consecutiveWrongCount >= _wrongThreshold)) {
+    if (_wrongCount >= _wrongThreshold) {
       _isSubmitting = false;
       _finalizeSession(terminatedDueToMistakes: true);
       return;
@@ -250,7 +248,7 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
                           child: Icon(
                             Icons.favorite,
                             size: 16,
-                            color: idx < (_wrongThreshold - _consecutiveWrongCount)
+                            color: idx < (_wrongThreshold - _wrongCount)
                                 ? AppColors.errorRed
                                 : Colors.grey.shade400,
                           ),

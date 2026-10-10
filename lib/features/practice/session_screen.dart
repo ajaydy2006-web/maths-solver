@@ -108,17 +108,15 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
 
     if (isCorrect) {
       _correctCount++;
-      _consecutiveWrongCount = 0; // Reset consecutive wrong streak on correct answer
     } else {
       _wrongCount++;
-      _consecutiveWrongCount++;
     }
 
     await Future.delayed(const Duration(milliseconds: 350));
     
     if (!mounted) return;
 
-    if (_wrongCount >= _wrongThreshold || (_threeWrongRestartEnabled && _consecutiveWrongCount >= _wrongThreshold)) {
+    if (_wrongCount >= _wrongThreshold) {
       _isSubmitting = false;
       _finalizeSession(terminatedDueToMistakes: true);
       return;
@@ -203,7 +201,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                           child: Icon(
                             Icons.favorite,
                             size: 16,
-                            color: idx < (_wrongThreshold - _consecutiveWrongCount)
+                            color: idx < (_wrongThreshold - _wrongCount)
                                 ? AppColors.errorRed
                                 : Colors.grey.shade400,
                           ),

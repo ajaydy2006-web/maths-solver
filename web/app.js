@@ -640,8 +640,8 @@ class AppController {
   renderHearts(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    const threshold = store.prefs.wrongAnswerThreshold;
-    const livesLeft = Math.max(0, threshold - this.consecutiveWrong);
+    const threshold = store.prefs.wrongAnswerThreshold || 3;
+    const livesLeft = Math.max(0, threshold - this.sessionWrong);
     container.innerHTML = Array.from({ length: threshold }).map((_, i) => `
       <span class="heart ${i < livesLeft ? 'active' : ''}">❤️</span>
     `).join('');
@@ -729,20 +729,21 @@ class AppController {
 
     if (isCorrect) {
       this.sessionCorrect++;
-      this.consecutiveWrong = 0;
       sounds.playCorrect();
       if (btnEl) btnEl.classList.add('correct-flash');
     } else {
       this.sessionWrong++;
-      this.consecutiveWrong++;
       sounds.playWrong();
       if (btnEl) btnEl.classList.add('wrong-flash');
+      // Update hearts immediately to reflect lost life without waiting
+      this.renderHearts('session-hearts');
+      this.renderHearts('mental-hearts');
     }
 
     setTimeout(() => {
-      // 3-wrong answer termination rule check
+      // 3-wrong answer termination rule check based on total mistakes
       const threshold = store.prefs.wrongAnswerThreshold || 3;
-      if (this.sessionWrong >= threshold || (store.prefs.threeWrongRestartEnabled && this.consecutiveWrong >= threshold)) {
+      if (this.sessionWrong >= threshold) {
         this.terminateMistakeSession();
         return;
       }
