@@ -354,12 +354,79 @@
             <button class="chip" data-val="Hard">Hard</button>
           </div>
 
-          <div class="slider-control-group">
-            <div class="flex-between">
+          <div class="calendar-time-section">
+            <div class="flex-between" style="margin-bottom: 8px;">
               <h3>Timer Duration</h3>
-              <strong id="config-timer-val" style="color:var(--primary-orange);">60 s</strong>
+              <div class="timer-badge" id="config-timer-val">60 s</div>
             </div>
-            <input type="range" id="config-timer-slider" min="30" max="300" step="30" value="60">
+            <div class="calendar-picker-wrapper">
+              <div class="calendar-picker-track" id="calendar-time-picker">
+                <div class="time-col" data-seconds="15" data-top="15s">
+                  <div class="indicator-arrow"></div>
+                  <span class="time-top-label">15s</span>
+                  <div class="time-capsule">
+                    <div class="time-circle">15</div>
+                  </div>
+                </div>
+                <div class="time-col" data-seconds="30" data-top="30s">
+                  <div class="indicator-arrow"></div>
+                  <span class="time-top-label">30s</span>
+                  <div class="time-capsule">
+                    <div class="time-circle">30</div>
+                  </div>
+                </div>
+                <div class="time-col" data-seconds="45" data-top="45s">
+                  <div class="indicator-arrow"></div>
+                  <span class="time-top-label">45s</span>
+                  <div class="time-capsule">
+                    <div class="time-circle">45</div>
+                  </div>
+                </div>
+                <div class="time-col active" data-seconds="60" data-top="60s">
+                  <div class="indicator-arrow"></div>
+                  <span class="time-top-label">60s</span>
+                  <div class="time-capsule active">
+                    <div class="time-circle">60</div>
+                  </div>
+                </div>
+                <div class="time-col" data-seconds="90" data-top="90s">
+                  <div class="indicator-arrow"></div>
+                  <span class="time-top-label">90s</span>
+                  <div class="time-capsule">
+                    <div class="time-circle">90</div>
+                  </div>
+                </div>
+                <div class="time-col" data-seconds="120" data-top="2m">
+                  <div class="indicator-arrow"></div>
+                  <span class="time-top-label">2m</span>
+                  <div class="time-capsule">
+                    <div class="time-circle">120</div>
+                  </div>
+                </div>
+                <div class="time-col" data-seconds="180" data-top="3m">
+                  <div class="indicator-arrow"></div>
+                  <span class="time-top-label">3m</span>
+                  <div class="time-capsule">
+                    <div class="time-circle">180</div>
+                  </div>
+                </div>
+                <div class="time-col" data-seconds="240" data-top="4m">
+                  <div class="indicator-arrow"></div>
+                  <span class="time-top-label">4m</span>
+                  <div class="time-capsule">
+                    <div class="time-circle">240</div>
+                  </div>
+                </div>
+                <div class="time-col" data-seconds="300" data-top="5m">
+                  <div class="indicator-arrow"></div>
+                  <span class="time-top-label">5m</span>
+                  <div class="time-capsule">
+                    <div class="time-circle">300</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <input type="hidden" id="config-timer-slider" value="60">
           </div>
 
           <div class="slider-control-group">

@@ -1138,3 +1138,116 @@ input[type="range"] {
 .px-20 { padding-left: 20px; padding-right: 20px; }
 .mb-10 { margin-bottom: 10px; }
 .text-sub { color: var(--text-secondary); font-size: 13px; }
+
+/* CALENDAR-INSPIRED TIME SELECTOR */
+.calendar-time-section {
+  margin-top: 14px;
+  margin-bottom: 20px;
+}
+.timer-badge {
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 4px 12px;
+  border-radius: 14px;
+}
+.calendar-picker-wrapper {
+  background: #F7F8FA;
+  border: 1px solid #EAEBED;
+  border-radius: 20px;
+  padding: 12px 10px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.calendar-picker-wrapper::-webkit-scrollbar {
+  display: none;
+}
+.calendar-picker-track {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  padding: 0 6px 4px;
+}
+.time-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+.indicator-arrow {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #1E2022;
+  margin-bottom: 3px;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: translateY(-2px);
+}
+.time-col.active .indicator-arrow {
+  opacity: 1;
+  transform: translateY(0);
+}
+.time-top-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #A0A5B1;
+  margin-bottom: 8px;
+  transition: color 0.2s ease;
+  font-family: var(--font-body);
+}
+.time-col.active .time-top-label {
+  color: #1E2022;
+  font-weight: 800;
+}
+.time-capsule {
+  width: 52px;
+  height: 90px;
+  border-radius: 26px;
+  background: #F9F9FB;
+  border: 1.2px solid #E5E7EB;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 4px;
+  box-sizing: border-box;
+  transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.time-capsule:hover {
+  border-color: #D1D5DB;
+}
+.time-capsule.active {
+  height: 96px;
+  background: #FFFFFF;
+  border: 1px solid rgba(0,0,0,0.04);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.08), 0 4px 10px rgba(239, 68, 68, 0.12);
+}
+.time-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.4px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #9CA3AF;
+  transition: all 0.25s ease;
+  font-family: var(--font-body);
+}
+.time-capsule.active .time-circle {
+  border: none;
+  background: linear-gradient(135deg, #FF5252, #E53935);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.40);
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 17px;
+}
+

@@ -987,10 +987,42 @@ class AppController {
       });
     });
 
-    document.getElementById('config-timer-slider').addEventListener('input', e => {
-      this.activeConfig.timerSeconds = parseInt(e.target.value);
-      document.getElementById('config-timer-val').textContent = `${e.target.value} s`;
+    // Calendar Time Picker Selector
+    document.querySelectorAll('#calendar-time-picker .time-col').forEach(col => {
+      col.addEventListener('click', () => {
+        const seconds = parseInt(col.dataset.seconds);
+        this.activeConfig.timerSeconds = seconds;
+        
+        // Update active classes
+        document.querySelectorAll('#calendar-time-picker .time-col').forEach(x => {
+          x.classList.remove('active');
+          const cap = x.querySelector('.time-capsule');
+          if (cap) cap.classList.remove('active');
+        });
+        col.classList.add('active');
+        const activeCap = col.querySelector('.time-capsule');
+        if (activeCap) activeCap.classList.add('active');
+
+        // Update badge display
+        const badge = document.getElementById('config-timer-val');
+        if (badge) badge.textContent = `${seconds} s`;
+
+        // Smoothly center the active item in view
+        col.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+
+        if (navigator.vibrate) {
+          try { navigator.vibrate(12); } catch (_) {}
+        }
+      });
     });
+
+    const hiddenTimerInput = document.getElementById('config-timer-slider');
+    if (hiddenTimerInput && hiddenTimerInput.type === 'range') {
+      hiddenTimerInput.addEventListener('input', e => {
+        this.activeConfig.timerSeconds = parseInt(e.target.value);
+        document.getElementById('config-timer-val').textContent = `${e.target.value} s`;
+      });
+    }
 
     document.getElementById('config-count-slider').addEventListener('input', e => {
       this.activeConfig.questionCount = parseInt(e.target.value);
