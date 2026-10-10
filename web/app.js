@@ -103,7 +103,9 @@ const CATEGORIES = [
 
 // --- 3. QUESTION GENERATOR (ALGORITHMIC) ---
 class QuestionGenerator {
-  static generate(category, difficulty, count = 20) {
+  static recentSignatures = new Set();
+
+  static generate(category, difficulty, count = 10) {
     const list = [];
     for (let i = 0; i < count; i++) {
       list.push(this.generateSingle(category, difficulty, i));
@@ -112,9 +114,34 @@ class QuestionGenerator {
   }
 
   static generateSingle(cat, diff, idx) {
+    let q;
+    let attempts = 0;
+    do {
+      q = this._generateSingleRaw(cat, diff, idx);
+      attempts++;
+    } while (this.recentSignatures.has(q.expr) && attempts < 15);
+
+    this.recentSignatures.add(q.expr);
+    if (this.recentSignatures.size > 80) {
+      const first = this.recentSignatures.values().next().value;
+      this.recentSignatures.delete(first);
+    }
+    return q;
+  }
+
+  static _generateSingleRaw(cat, diff, idx) {
     let activeCat = cat;
     if (cat === 'Mixed Practice' || cat === 'Custom Practice') {
-      const pool = ['Basic Arithmetic', 'Random Calculations', 'BODMAS Challenge', 'Number Series', 'Inequalities', 'Missing Number', 'Mental Calculation'];
+      const pool = [
+        'Basic Arithmetic',
+        'Random Calculations',
+        'BODMAS Challenge',
+        'Number Series',
+        'Inequalities',
+        'Missing Number',
+        'Mental Calculation',
+        'Number Puzzles'
+      ];
       activeCat = pool[Math.floor(Math.random() * pool.length)];
     }
 
@@ -134,10 +161,14 @@ class QuestionGenerator {
   static genArithmetic(diff, id) {
     const ops = ['+', '-', '×', '÷'];
     const op = ops[Math.floor(Math.random() * ops.length)];
-    const maxVal = diff === 'Hard' ? 90 : (diff === 'Medium' ? 45 : 20);
-    const minVal = diff === 'Hard' ? 15 : (diff === 'Medium' ? 8 : 2);
+    const maxVal = diff === 'Hard' ? 95 : (diff === 'Medium' ? 50 : 25);
+    const minVal = diff === 'Hard' ? 16 : (diff === 'Medium' ? 8 : 3);
     let a = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
     let b = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+    while (a === b) {
+      b = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+    }
+
     let ans, expr, exp;
 
     if (op === '+') {
@@ -148,16 +179,22 @@ class QuestionGenerator {
       if (a < b) { const t = a; a = b; b = t; }
       ans = a - b;
       expr = `${a} - ${b} = ?`;
-      exp = `Subtract in chunks: ${a} - ${Math.floor(b/10)*10} = ${a - Math.floor(b/10)*10}, then minus ${b%10} = ${ans}.`;
+      exp = `Subtract in parts: ${a} - ${Math.floor(b/10)*10} = ${a - Math.floor(b/10)*10}, then minus ${b%10} = ${ans}.`;
     } else if (op === '×') {
       a = diff === 'Hard' ? Math.floor(Math.random() * 12) + 6 : Math.floor(Math.random() * 8) + 3;
       b = diff === 'Hard' ? Math.floor(Math.random() * 10) + 4 : Math.floor(Math.random() * 7) + 2;
+      while (a === b) {
+        b = diff === 'Hard' ? Math.floor(Math.random() * 10) + 4 : Math.floor(Math.random() * 7) + 2;
+      }
       ans = a * b;
       expr = `${a} × ${b} = ?`;
-      exp = `Multiplication table: ${a} × ${b} = ${ans}.`;
+      exp = `Multiplication: ${a} × ${b} = ${ans}.`;
     } else {
       b = Math.floor(Math.random() * 8) + 2;
-      const quot = Math.floor(Math.random() * 10) + 2;
+      let quot = Math.floor(Math.random() * 10) + 2;
+      while (b === quot) {
+        quot = Math.floor(Math.random() * 10) + 2;
+      }
       a = b * quot;
       ans = quot;
       expr = `${a} ÷ ${b} = ?`;
@@ -173,25 +210,27 @@ class QuestionGenerator {
   static genRandomCalc(diff, id) {
     const mode = Math.floor(Math.random() * 3);
     if (mode === 0) {
-      const n = Math.floor(Math.random() * 12) + 6;
+      const n = Math.floor(Math.random() * 14) + 6;
       const ans = n * n;
       return {
         id, category: 'Random Calculations', expr: `${n}² = ?`, ans: ans.toString(),
         options: this.genDistractors(ans), explanation: `Square of ${n}: ${n} × ${n} = ${ans}.`, diff
       };
     } else if (mode === 1) {
-      const pcts = [10, 20, 25, 50];
+      const pcts = [10, 20, 25, 50, 75];
       const p = pcts[Math.floor(Math.random() * pcts.length)];
-      const base = (Math.floor(Math.random() * 8) + 2) * 20;
+      const base = (Math.floor(Math.random() * 9) + 2) * 20;
       const ans = Math.round((p * base) / 100);
       return {
         id, category: 'Random Calculations', expr: `${p}% of ${base} = ?`, ans: ans.toString(),
-        options: this.genDistractors(ans), explanation: `10% of ${base} is ${base/10}. Multiply to find ${p}% = ${ans}.`, diff
+        options: this.genDistractors(ans), explanation: `10% of ${base} is ${base/10}. Multiplying gives ${p}% = ${ans}.`, diff
       };
     } else {
-      const a = Math.floor(Math.random() * 25) + 10;
-      const b = Math.floor(Math.random() * 25) + 10;
-      const c = Math.floor(Math.random() * 15) + 5;
+      const a = Math.floor(Math.random() * 30) + 12;
+      let b = Math.floor(Math.random() * 30) + 12;
+      while (b === a) { b = Math.floor(Math.random() * 30) + 12; }
+      let c = Math.floor(Math.random() * 18) + 5;
+      while (c === a || c === b) { c = Math.floor(Math.random() * 18) + 5; }
       const ans = a + b - c;
       return {
         id, category: 'Random Calculations', expr: `${a} + ${b} - ${c} = ?`, ans: ans.toString(),
@@ -201,9 +240,12 @@ class QuestionGenerator {
   }
 
   static genBodmas(diff, id) {
-    const a = Math.floor(Math.random() * 8) + 2;
-    const b = Math.floor(Math.random() * 8) + 2;
-    const c = Math.floor(Math.random() * 6) + 2;
+    const a = Math.floor(Math.random() * 9) + 2;
+    let b = Math.floor(Math.random() * 9) + 2;
+    while (b === a) { b = Math.floor(Math.random() * 9) + 2; }
+    let c = Math.floor(Math.random() * 7) + 2;
+    while (c === a || c === b) { c = Math.floor(Math.random() * 7) + 2; }
+
     const isBracket = Math.random() > 0.5;
     let ans, expr, exp;
 
@@ -223,21 +265,78 @@ class QuestionGenerator {
   }
 
   static genSeries(diff, id) {
-    const start = Math.floor(Math.random() * 10) + 2;
-    const step = Math.floor(Math.random() * 5) + 3;
-    const seq = [start, start + step, start + 2 * step, start + 3 * step];
-    const ans = start + 4 * step;
+    const types = [
+      // Arithmetic
+      () => {
+        const start = Math.floor(Math.random() * 15) + 3;
+        const step = Math.floor(Math.random() * 7) + 3;
+        const seq = [start, start + step, start + 2 * step, start + 3 * step];
+        const ans = start + 4 * step;
+        return {
+          expr: `${seq.join(', ')}, ?`,
+          ans: ans.toString(),
+          exp: `Arithmetic sequence adding +${step} each step: ${seq[3]} + ${step} = ${ans}.`
+        };
+      },
+      // Increasing difference (+2, +4, +6, +8...)
+      () => {
+        const start = Math.floor(Math.random() * 10) + 2;
+        const diffStart = Math.floor(Math.random() * 3) + 2;
+        const s0 = start;
+        const s1 = s0 + diffStart;
+        const s2 = s1 + (diffStart + 2);
+        const s3 = s2 + (diffStart + 4);
+        const ans = s3 + (diffStart + 6);
+        return {
+          expr: `${s0}, ${s1}, ${s2}, ${s3}, ?`,
+          ans: ans.toString(),
+          exp: `Differences increase by +2 each step (+${diffStart}, +${diffStart+2}, +${diffStart+4}, +${diffStart+6}): ${s3} + ${diffStart+6} = ${ans}.`
+        };
+      },
+      // Doubling difference (+3, +6, +12, +24...)
+      () => {
+        const start = Math.floor(Math.random() * 8) + 2;
+        const step = Math.floor(Math.random() * 3) + 2;
+        const s0 = start;
+        const s1 = s0 + step;
+        const s2 = s1 + step * 2;
+        const s3 = s2 + step * 4;
+        const ans = s3 + step * 8;
+        return {
+          expr: `${s0}, ${s1}, ${s2}, ${s3}, ?`,
+          ans: ans.toString(),
+          exp: `Differences double each step (+${step}, +${step*2}, +${step*4}, +${step*8}): ${s3} + ${step*8} = ${ans}.`
+        };
+      },
+      // Squares sequence
+      () => {
+        const start = Math.floor(Math.random() * 4) + 2;
+        const seq = [start*start, (start+1)*(start+1), (start+2)*(start+2), (start+3)*(start+3)];
+        const ans = (start+4)*(start+4);
+        return {
+          expr: `${seq.join(', ')}, ?`,
+          ans: ans.toString(),
+          exp: `Perfect squares sequence: ${start}², ${start+1}², ${start+2}², ${start+3}², ${start+4}² = ${ans}.`
+        };
+      }
+    ];
+
+    const pick = types[Math.floor(Math.random() * types.length)]();
     return {
-      id, category: 'Number Series', expr: `${seq.join(', ')}, ?`, ans: ans.toString(),
-      options: this.genDistractors(ans), explanation: `Arithmetic series with difference +${step}. Next is ${seq[3]} + ${step} = ${ans}.`, diff
+      id, category: 'Number Series', expr: pick.expr, ans: pick.ans,
+      options: this.genDistractors(parseInt(pick.ans)), explanation: pick.exp, diff
     };
   }
 
   static genInequality(diff, id) {
-    const a = Math.floor(Math.random() * 20) + 5;
-    const b = Math.floor(Math.random() * 10) + 2;
-    const c = Math.floor(Math.random() * 20) + 5;
-    const d = Math.floor(Math.random() * 10) + 2;
+    const a = Math.floor(Math.random() * 22) + 5;
+    let b = Math.floor(Math.random() * 14) + 2;
+    while (b === a) { b = Math.floor(Math.random() * 14) + 2; }
+    let c = Math.floor(Math.random() * 22) + 5;
+    while (c === a || c === b) { c = Math.floor(Math.random() * 22) + 5; }
+    let d = Math.floor(Math.random() * 14) + 2;
+    while (d === a || d === b || d === c) { d = Math.floor(Math.random() * 14) + 2; }
+
     const left = a + b;
     const right = c + d;
     let ans = '=';
@@ -257,9 +356,15 @@ class QuestionGenerator {
     const steps = [cur.toString()];
     const expSteps = [`Start with ${cur}`];
 
+    let lastV = -1;
     for (let i = 1; i < count; i++) {
       const isAdd = Math.random() > 0.5;
-      const v = Math.floor(Math.random() * 12) + 3;
+      let v = Math.floor(Math.random() * 12) + 3;
+      while (v === lastV) {
+        v = Math.floor(Math.random() * 12) + 3;
+      }
+      lastV = v;
+
       if (isAdd || cur - v < 5) {
         cur += v;
         steps.push(`+ ${v}`);
@@ -279,8 +384,11 @@ class QuestionGenerator {
   }
 
   static genMissing(diff, id) {
-    const a = Math.floor(Math.random() * 30) + 10;
-    const b = Math.floor(Math.random() * 20) + 5;
+    const a = Math.floor(Math.random() * 32) + 10;
+    let b = Math.floor(Math.random() * 24) + 5;
+    while (a === b) {
+      b = Math.floor(Math.random() * 24) + 5;
+    }
     const sum = a + b;
     return {
       id, category: 'Missing Number', expr: `${a} + ? = ${sum}`, ans: b.toString(),
@@ -289,20 +397,147 @@ class QuestionGenerator {
   }
 
   static genPuzzle(diff, id) {
-    const n = Math.floor(Math.random() * 5) + 3;
-    const ans = (n + 2) * (n + 2);
+    const concepts = [
+      // Concept 1: x -> x² + k or x² - k
+      () => {
+        const k = [1, 2, 3, -1, -2][Math.floor(Math.random() * 5)];
+        const sign = k >= 0 ? `+ ${k}` : `- ${Math.abs(k)}`;
+        const start = Math.floor(Math.random() * 4) + 2;
+        const e1 = start; const r1 = e1 * e1 + k;
+        const e2 = start + 1; const r2 = e2 * e2 + k;
+        const e3 = start + 2; const r3 = e3 * e3 + k;
+        const e4 = start + 3; const ans = e4 * e4 + k;
+        return {
+          expr: `${e1} → ${r1}\n${e2} → ${r2}\n${e3} → ${r3}\n${e4} → ?`,
+          ans: ans.toString(),
+          explanation: `Pattern rule is: x → x² ${sign}.\nFor ${e4}: (${e4})² ${sign} = ${e4 * e4} ${sign} = ${ans}.`
+        };
+      },
+      // Concept 2: Consecutive Product: x -> x * (x + 1)
+      () => {
+        const start = Math.floor(Math.random() * 5) + 2;
+        const e1 = start; const r1 = e1 * (e1 + 1);
+        const e2 = start + 1; const r2 = e2 * (e2 + 1);
+        const e3 = start + 2; const r3 = e3 * (e3 + 1);
+        const e4 = start + 3; const ans = e4 * (e4 + 1);
+        return {
+          expr: `${e1} → ${r1}\n${e2} → ${r2}\n${e3} → ${r3}\n${e4} → ?`,
+          ans: ans.toString(),
+          explanation: `Pattern rule is: x → x × (x + 1).\nFor ${e4}: ${e4} × ${e4 + 1} = ${ans}.`
+        };
+      },
+      // Concept 3: Multiplier + Offset: a * x + c
+      () => {
+        const a = [2, 3, 4, 5][Math.floor(Math.random() * 4)];
+        const c = Math.floor(Math.random() * 4) + 1;
+        const start = Math.floor(Math.random() * 4) + 2;
+        const e1 = start; const r1 = a * e1 + c;
+        const e2 = start + 1; const r2 = a * e2 + c;
+        const e3 = start + 2; const r3 = a * e3 + c;
+        const e4 = start + 3; const ans = a * e4 + c;
+        return {
+          expr: `${e1} → ${r1}\n${e2} → ${r2}\n${e3} → ${r3}\n${e4} → ?`,
+          ans: ans.toString(),
+          explanation: `Pattern rule is: (${a} × x) + ${c}.\nFor ${e4}: (${a} × ${e4}) + ${c} = ${a * e4} + ${c} = ${ans}.`
+        };
+      },
+      // Concept 4: Cube Pattern: x -> x³ or x³ - 1
+      () => {
+        const k = [0, 1, -1][Math.floor(Math.random() * 3)];
+        const start = 2;
+        const e1 = start; const r1 = (e1 * e1 * e1) + k;
+        const e2 = start + 1; const r2 = (e2 * e2 * e2) + k;
+        const e3 = start + 2; const r3 = (e3 * e3 * e3) + k;
+        const e4 = start + 3; const ans = (e4 * e4 * e4) + k;
+        const sign = k === 0 ? '' : (k > 0 ? ` + ${k}` : ` - ${Math.abs(k)}`);
+        return {
+          expr: `${e1} → ${r1}\n${e2} → ${r2}\n${e3} → ${r3}\n${e4} → ?`,
+          ans: ans.toString(),
+          explanation: `Pattern rule is: x → x³${sign}.\nFor ${e4}: (${e4})³${sign} = ${e4 * e4 * e4}${sign} = ${ans}.`
+        };
+      },
+      // Concept 5: Two-Input Custom Operator a ⊕ b = (a × b) + (a + b)
+      () => {
+        const a1 = Math.floor(Math.random() * 3) + 2;
+        const b1 = a1 + 1;
+        const r1 = (a1 * b1) + (a1 + b1);
+        const a2 = a1 + 1; const b2 = b1 + 1;
+        const r2 = (a2 * b2) + (a2 + b2);
+        const a3 = a2 + 1; const b3 = b2 + 1;
+        const r3 = (a3 * b3) + (a3 + b3);
+        const a4 = a3 + 1; const b4 = b3 + 1;
+        const ans = (a4 * b4) + (a4 + b4);
+        return {
+          expr: `${a1} ⊕ ${b1} = ${r1}\n${a2} ⊕ ${b2} = ${r2}\n${a3} ⊕ ${b3} = ${r3}\n${a4} ⊕ ${b4} = ?`,
+          ans: ans.toString(),
+          explanation: `Operator logic: a ⊕ b = (a × b) + (a + b).\nFor ${a4} ⊕ ${b4}: (${a4} × ${b4}) + (${a4} + ${b4}) = ${a4 * b4} + ${a4 + b4} = ${ans}.`
+        };
+      },
+      // Concept 6: Digit Multiplication x -> d1 * d2
+      () => {
+        const pairs = [
+          [23, 6, "2 × 3"],
+          [34, 12, "3 × 4"],
+          [45, 20, "4 × 5"],
+          [56, 30, "5 × 6"],
+          [67, 42, "6 × 7"],
+          [78, 56, "7 × 8"]
+        ];
+        const offset = Math.floor(Math.random() * 3);
+        const p1 = pairs[offset];
+        const p2 = pairs[offset + 1];
+        const p3 = pairs[offset + 2];
+        const p4 = pairs[offset + 3];
+        return {
+          expr: `${p1[0]} → ${p1[1]}\n${p2[0]} → ${p2[1]}\n${p3[0]} → ${p3[1]}\n${p4[0]} → ?`,
+          ans: p4[1].toString(),
+          explanation: `Rule: Multiply the two digits together.\nFor ${p4[0]}: ${p4[2]} = ${p4[1]}.`
+        };
+      },
+      // Concept 7: Progressive Multipliers: ×2, ×3, ×4, ×5
+      () => {
+        const base = Math.floor(Math.random() * 3) + 2;
+        const s1 = base;
+        const s2 = s1 * 2;
+        const s3 = s2 * 3;
+        const s4 = s3 * 4;
+        const ans = s4 * 5;
+        return {
+          expr: `${s1} → ${s2} (×2)\n${s2} → ${s3} (×3)\n${s3} → ${s4} (×4)\n${s4} → ?`,
+          ans: ans.toString(),
+          explanation: `Multiply by ascending integers (×2, ×3, ×4, ×5).\nNext step: ${s4} × 5 = ${ans}.`
+        };
+      },
+      // Concept 8: Pair Sum of Squares: [a, b] -> a² + b²
+      () => {
+        const start = Math.floor(Math.random() * 3) + 1;
+        const a1 = start; const b1 = start + 1; const r1 = a1 * a1 + b1 * b1;
+        const a2 = start + 1; const b2 = start + 2; const r2 = a2 * a2 + b2 * b2;
+        const a3 = start + 2; const b3 = start + 3; const r3 = a3 * a3 + b3 * b3;
+        const a4 = start + 3; const b4 = start + 4; const ans = a4 * a4 + b4 * b4;
+        return {
+          expr: `[${a1}, ${b1}] → ${r1}\n[${a2}, ${b2}] → ${r2}\n[${a3}, ${b3}] → ${r3}\n[${a4}, ${b4}] → ?`,
+          ans: ans.toString(),
+          explanation: `Rule is sum of squares: a² + b².\nFor [${a4}, ${b4}]: ${a4}² + ${b4}² = ${a4 * a4} + ${b4 * b4} = ${ans}.`
+        };
+      }
+    ];
+
+    const pick = concepts[Math.floor(Math.random() * concepts.length)]();
     return {
-      id, category: 'Number Puzzles',
-      expr: `${n} → ${n*n}\n${n+1} → ${(n+1)*(n+1)}\n${n+2} → ?`,
-      ans: ans.toString(),
-      options: this.genDistractors(ans),
-      explanation: `Pattern: x → x². For ${n+2}, answer is (${n+2})² = ${ans}.`, diff
+      id,
+      category: 'Number Puzzles',
+      expr: pick.expr,
+      ans: pick.ans,
+      options: this.genDistractors(parseInt(pick.ans)),
+      explanation: pick.explanation,
+      diff
     };
   }
 
   static genDistractors(correct) {
     const set = new Set([correct]);
-    const deltas = [1, -1, 2, -2, 5, -5, 10, -10, 3, -3, 4, -4].sort(() => Math.random() - 0.5);
+    const deltas = [1, -1, 2, -2, 5, -5, 10, -10, 3, -3, 4, -4, 7, -7].sort(() => Math.random() - 0.5);
     for (let d of deltas) {
       if (set.size >= 4) break;
       const cand = correct + d;
