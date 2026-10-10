@@ -53,26 +53,19 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
     _currentIndex = 0;
     _correctCount = 0;
     _wrongCount = 0;
-    _consecutiveWrongCount = 0;
     _attempts.clear();
-    _remainingSeconds = widget.config.timerSeconds;
+    _remainingSeconds = 0;
 
     _sessionTimer?.cancel();
-    if (_remainingSeconds > 0) {
-      _sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (!mounted) {
-          timer.cancel();
-          return;
-        }
-        setState(() {
-          if (_remainingSeconds > 0) {
-            _remainingSeconds--;
-          } else {
-            _finalizeSession();
-          }
-        });
+    _sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _remainingSeconds++;
       });
-    }
+    });
 
     _playCurrentQuestionSequence();
   }
@@ -111,29 +104,7 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
     });
   }
 
-  void _handleRestart() {
-    _sessionTimer?.cancel();
-    _stepTimer?.cancel();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          "$_wrongThreshold mistakes! Let's try again. Every retry strengthens your mental stamina.",
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: AppColors.errorRed,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _startSession();
-        });
-      }
-    });
-  }
-
-  void _finalizeSession() {
+  void _finalizeSession({bool terminatedDueToMistakes = false}) {
     _sessionTimer?.cancel();
     _stepTimer?.cancel();
 
@@ -142,9 +113,10 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
       'score': _correctCount * 10,
       'correctAnswers': _correctCount,
       'incorrectAnswers': _wrongCount,
-      'totalQuestions': _questions.length,
-      'durationSeconds': widget.config.timerSeconds - _remainingSeconds,
+      'totalQuestions': _attempts.length,
+      'durationSeconds': _remainingSeconds,
       'attempts': _attempts,
+      'terminated': terminatedDueToMistakes,
     };
 
     context.pushReplacement('/results', extra: result);
@@ -171,32 +143,28 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
 
     if (isCorrect) {
       _correctCount++;
-      _consecutiveWrongCount = 0;
     } else {
       _wrongCount++;
-      _consecutiveWrongCount++;
     }
 
     await Future.delayed(const Duration(milliseconds: 400));
 
     if (!mounted) return;
 
-    if (_threeWrongRestartEnabled && _consecutiveWrongCount >= _wrongThreshold) {
+    if (_wrongCount >= _wrongThreshold) {
       _isSubmitting = false;
-      _handleRestart();
+      _finalizeSession(terminatedDueToMistakes: true);
       return;
     }
 
-    if (_currentIndex < _questions.length - 1) {
-      setState(() {
-        _currentIndex++;
-        _isSubmitting = false;
-      });
-      _playCurrentQuestionSequence();
-    } else {
+    setState(() {
+      _currentIndex++;
+      if (_currentIndex >= _questions.length) {
+        _questions.addAll(QuestionGenerator.generateQuestions(widget.config));
+      }
       _isSubmitting = false;
-      _finalizeSession();
-    }
+    });
+    _playCurrentQuestionSequence();
   }
 
   @override
@@ -255,12 +223,12 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Progress Bar & Question Counter
+              // Question Counter & Lives Indicator
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Question ${_currentIndex + 1} of ${_questions.length}",
+                    "Question ${_currentIndex + 1}",
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
                   ),
                   if (_threeWrongRestartEnabled)
@@ -271,7 +239,7 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
                           child: Icon(
                             Icons.favorite,
                             size: 16,
-                            color: idx < (_wrongThreshold - _consecutiveWrongCount)
+                            color: idx < (_wrongThreshold - _wrongCount)
                                 ? AppColors.errorRed
                                 : Colors.grey.shade400,
                           ),
@@ -280,15 +248,7 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: (_currentIndex) / _questions.length,
-                backgroundColor: AppColors.surfacePrimary,
-                color: AppColors.pastelPurple,
-                minHeight: 8,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               // Speed & Replay Controls
               Row(
@@ -336,64 +296,69 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
                 ],
               ),
 
-              const Spacer(),
+              const SizedBox(height: 8),
 
               // Sequential Display Card
-              Center(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) {
-                    return ScaleTransition(
-                      scale: animation,
-                      child: FadeTransition(opacity: animation, child: child),
-                    );
-                  },
-                  child: Container(
-                    key: ValueKey<String>('step_${_currentStepIndex}_$_sequenceCompleted'),
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 60.0, horizontal: 20.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(32),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.pastelPurple.withOpacity(0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (!_sequenceCompleted)
-                          Text(
-                            "Step ${_currentStepIndex + 1} of ${steps.length}",
-                            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                          ),
-                        const SizedBox(height: 12),
-                        Text(
-                          currentDisplayStep,
-                          style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                                fontSize: 52,
-                                color: _sequenceCompleted ? AppColors.primaryOrange : AppColors.textPrimary,
-                              ),
-                          textAlign: TextAlign.center,
-                        ),
-                        if (_sequenceCompleted) ...[
-                          const SizedBox(height: 8),
-                          const Text(
-                            "What is the final answer?",
-                            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              Expanded(
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, animation) {
+                      return ScaleTransition(
+                        scale: animation,
+                        child: FadeTransition(opacity: animation, child: child),
+                      );
+                    },
+                    child: Container(
+                      key: ValueKey<String>('step_${_currentStepIndex}_$_sequenceCompleted'),
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 20.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.pastelPurple.withOpacity(0.2),
+                            blurRadius: 18,
+                            offset: const Offset(0, 6),
                           ),
                         ],
-                      ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!_sequenceCompleted)
+                            Text(
+                              "Step ${_currentStepIndex + 1} of ${steps.length}",
+                              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            ),
+                          const SizedBox(height: 8),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              currentDisplayStep,
+                              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                    fontSize: 44,
+                                    color: _sequenceCompleted ? AppColors.primaryOrange : AppColors.textPrimary,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          if (_sequenceCompleted) ...[
+                            const SizedBox(height: 6),
+                            const Text(
+                              "What is the final answer?",
+                              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
 
-              const Spacer(),
+              const SizedBox(height: 14),
 
               // Answer Options (Shown after sequence completes, or dimmed while flashing)
               AnimatedOpacity(

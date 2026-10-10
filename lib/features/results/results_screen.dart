@@ -51,48 +51,70 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     final total = widget.result['totalQuestions'] as int? ?? 0;
     final duration = widget.result['durationSeconds'] as int? ?? 0;
     final category = widget.result['category'] as String? ?? 'Practice';
+    final terminated = widget.result['terminated'] as bool? ?? false;
     final accuracy = total > 0 ? ((correct / total) * 100).toStringAsFixed(1) : '0';
     final avgSpeed = total > 0 ? (duration / total).toStringAsFixed(1) : '0';
 
     return Scaffold(
       backgroundColor: AppColors.backgroundCream,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => context.go('/home'),
+        ),
+        title: Text(
+          terminated ? "Game Over" : "Results",
+          style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 16),
-              // Trophy Badge
+              const SizedBox(height: 8),
+              // Badge
               Center(
                 child: Container(
                   width: 110,
                   height: 110,
                   decoration: BoxDecoration(
-                    color: AppColors.highlightYellow.withOpacity(0.2),
+                    color: terminated
+                        ? AppColors.errorRed.withOpacity(0.12)
+                        : AppColors.highlightYellow.withOpacity(0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: const Center(
-                    child: Icon(Icons.emoji_events, size: 70, color: AppColors.primaryOrange),
+                  child: Center(
+                    child: Icon(
+                      terminated ? Icons.highlight_off_rounded : Icons.emoji_events,
+                      size: 70,
+                      color: terminated ? AppColors.errorRed : AppColors.primaryOrange,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               Text(
-                "Session Complete!",
+                terminated ? "Game Over" : "Session Complete!",
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: 30),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 6),
               Text(
-                category,
+                terminated
+                    ? "$category • Terminated after 3 mistakes"
+                    : category,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: AppColors.textSecondary,
-                      fontSize: 18,
+                      fontSize: 16,
                     ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 28),
 
               // Main Stats Card
               Card(
@@ -114,7 +136,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                       _buildStatRow(
                         context,
                         "Correct Answers",
-                        "$correct / $total",
+                        "$correct Correct (out of $total)",
                         AppColors.successGreen,
                         Icons.check_circle_outline,
                       ),
@@ -138,9 +160,23 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 28),
 
               // Action Buttons
+              SizedBox(
+                height: 54,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryOrange,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  ),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text("Back to Home", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  onPressed: () => context.go('/home'),
+                ),
+              ),
+              const SizedBox(height: 12),
               SizedBox(
                 height: 54,
                 child: ElevatedButton.icon(
@@ -148,6 +184,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                     backgroundColor: AppColors.pastelPurple,
                     foregroundColor: AppColors.textPrimary,
                     elevation: 1,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   ),
                   icon: const Icon(Icons.visibility),
                   label: const Text("Review Answers & Explanations"),
@@ -159,29 +196,17 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
               const SizedBox(height: 12),
               SizedBox(
                 height: 54,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryOrange,
-                    foregroundColor: Colors.white,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary,
+                    side: const BorderSide(color: Colors.black26),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   ),
                   icon: const Icon(Icons.refresh),
                   label: const Text("Practice Again"),
                   onPressed: () {
                     context.pushReplacement('/config/${Uri.encodeComponent(category)}');
                   },
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 54,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textPrimary,
-                    side: const BorderSide(color: Colors.black26),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                  ),
-                  onPressed: () => context.go('/home'),
-                  child: const Text("Return Home", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 16),

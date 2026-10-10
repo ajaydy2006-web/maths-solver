@@ -100,25 +100,30 @@ class _ConfigurationScreenState extends ConsumerState<ConfigurationScreen> {
                           },
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text("Question Count", style: Theme.of(context).textTheme.titleLarge),
-                          Text("$_questionCount Qs", style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkSlate)),
-                        ],
-                      ),
-                      Slider(
-                        value: _questionCount.toDouble(),
-                        min: 10,
-                        max: 50,
-                        divisions: 4,
-                        label: '$_questionCount',
-                        activeColor: AppColors.highlightYellow,
-                        inactiveColor: AppColors.pastelBlue,
-                        onChanged: (val) {
-                          setState(() => _questionCount = val.toInt());
-                        },
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryOrange.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.primaryOrange.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text("⚡", style: TextStyle(fontSize: 22)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("Endless Survival Mode", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 2),
+                                  Text("Questions continue until all 3 lives are lost.", style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),

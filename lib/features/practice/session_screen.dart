@@ -47,51 +47,23 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     _currentIndex = 0;
     _correctCount = 0;
     _wrongCount = 0;
-    _consecutiveWrongCount = 0;
     _attempts.clear();
-    _remainingSeconds = widget.config.timerSeconds;
+    _remainingSeconds = 0;
     _questionStartTime = DateTime.now();
     
     _timer?.cancel();
-    if (_remainingSeconds > 0) {
-      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (!mounted) {
-          timer.cancel();
-          return;
-        }
-        setState(() {
-          if (_remainingSeconds > 0) {
-            _remainingSeconds--;
-          } else {
-            _finalizeSession();
-          }
-        });
-      });
-    }
-  }
-
-  void _handleRestart() {
-    _timer?.cancel();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          "$_wrongThreshold mistakes! Let's try again. Every retry makes you sharper.",
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: AppColors.errorRed,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _startSession();
-        });
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
       }
+      setState(() {
+        _remainingSeconds++;
+      });
     });
   }
 
-  void _finalizeSession() {
+  void _finalizeSession({bool terminatedDueToMistakes = false}) {
     _timer?.cancel();
     
     final result = {
@@ -99,9 +71,10 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       'score': _correctCount * 10,
       'correctAnswers': _correctCount,
       'incorrectAnswers': _wrongCount,
-      'totalQuestions': _questions.length,
-      'durationSeconds': widget.config.timerSeconds - _remainingSeconds,
+      'totalQuestions': _attempts.length,
+      'durationSeconds': _remainingSeconds,
       'attempts': _attempts,
+      'terminated': terminatedDueToMistakes,
     };
     
     context.pushReplacement('/results', extra: result);
@@ -128,32 +101,28 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
 
     if (isCorrect) {
       _correctCount++;
-      _consecutiveWrongCount = 0; // Reset consecutive wrong streak on correct answer
     } else {
       _wrongCount++;
-      _consecutiveWrongCount++;
     }
 
     await Future.delayed(const Duration(milliseconds: 350));
     
     if (!mounted) return;
 
-    if (_threeWrongRestartEnabled && _consecutiveWrongCount >= _wrongThreshold) {
+    if (_wrongCount >= _wrongThreshold) {
       _isSubmitting = false;
-      _handleRestart();
+      _finalizeSession(terminatedDueToMistakes: true);
       return;
     }
 
-    if (_currentIndex < _questions.length - 1) {
-      setState(() {
-        _currentIndex++;
-        _questionStartTime = DateTime.now();
-        _isSubmitting = false;
-      });
-    } else {
+    setState(() {
+      _currentIndex++;
+      if (_currentIndex >= _questions.length) {
+        _questions.addAll(QuestionGenerator.generateQuestions(widget.config));
+      }
+      _questionStartTime = DateTime.now();
       _isSubmitting = false;
-      _finalizeSession();
-    }
+    });
   }
 
   @override
@@ -212,7 +181,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Question ${_currentIndex + 1} of ${_questions.length}",
+                    "Question ${_currentIndex + 1}",
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
                   ),
                   if (_threeWrongRestartEnabled)
@@ -223,7 +192,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                           child: Icon(
                             Icons.favorite,
                             size: 16,
-                            color: idx < (_wrongThreshold - _consecutiveWrongCount)
+                            color: idx < (_wrongThreshold - _wrongCount)
                                 ? AppColors.errorRed
                                 : Colors.grey.shade400,
                           ),
@@ -232,35 +201,34 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: (_currentIndex) / _questions.length,
-                backgroundColor: AppColors.surfacePrimary,
-                color: AppColors.pastelBlue,
-                minHeight: 8,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              const Spacer(),
-              Card(
-                color: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-                elevation: 4,
-                shadowColor: Colors.black.withOpacity(0.06),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 56.0, horizontal: 16.0),
-                  child: Center(
-                    child: Text(
-                      currentQuestion.displayExpression,
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        fontSize: 44,
-                        letterSpacing: 1.2,
+              const SizedBox(height: 12),
+              Expanded(
+                child: Center(
+                  child: Card(
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                    elevation: 3,
+                    shadowColor: Colors.black.withOpacity(0.06),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            currentQuestion.displayExpression,
+                            style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                              fontSize: 40,
+                              letterSpacing: 1.2,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 16),
               GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,

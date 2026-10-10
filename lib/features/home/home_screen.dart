@@ -26,7 +26,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         index: _currentTabIndex,
         children: [
           _buildHomeTab(context),
-          _buildPracticeTab(context),
           const ProgressScreen(),
           const ProfileScreen(),
         ],
@@ -44,7 +43,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         unselectedItemColor: AppColors.textSecondary,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.timer_outlined), label: 'Practice'),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Progress'),
           BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
         ],
