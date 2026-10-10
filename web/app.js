@@ -418,7 +418,7 @@ class AppController {
     this.activeConfig = {
       category: 'Basic Arithmetic',
       difficulty: 'Medium',
-      timerSeconds: 60,
+      timerSeconds: 3,
       questionCount: 20
     };
 

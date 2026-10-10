@@ -15,7 +15,7 @@ class ConfigurationScreen extends ConsumerStatefulWidget {
 
 class _ConfigurationScreenState extends ConsumerState<ConfigurationScreen> {
   String _difficulty = 'Medium';
-  int _timerSeconds = 60;
+  int _timerSeconds = 3;
   int _questionCount = 20;
 
   @override

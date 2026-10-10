@@ -357,14 +357,14 @@
           <div class="calendar-time-section">
             <div class="flex-between" style="margin-bottom: 8px;">
               <h3>Timer Duration</h3>
-              <div class="timer-badge" id="config-timer-val">60 s</div>
+              <div class="timer-badge" id="config-timer-val">3 s</div>
             </div>
             <div class="calendar-picker-wrapper">
               <div class="calendar-picker-track" id="calendar-time-picker">
-                <div class="time-col" data-seconds="3" data-top="3s">
+                <div class="time-col active" data-seconds="3" data-top="3s">
                   <div class="indicator-arrow"></div>
                   <span class="time-top-label">3s</span>
-                  <div class="time-capsule">
+                  <div class="time-capsule active">
                     <div class="time-circle">3</div>
                   </div>
                 </div>
@@ -403,10 +403,10 @@
                     <div class="time-circle">45</div>
                   </div>
                 </div>
-                <div class="time-col active" data-seconds="60" data-top="60s">
+                <div class="time-col" data-seconds="60" data-top="60s">
                   <div class="indicator-arrow"></div>
                   <span class="time-top-label">60s</span>
-                  <div class="time-capsule active">
+                  <div class="time-capsule">
                     <div class="time-circle">60</div>
                   </div>
                 </div>
@@ -447,7 +447,7 @@
                 </div>
               </div>
             </div>
-            <input type="hidden" id="config-timer-slider" value="60">
+            <input type="hidden" id="config-timer-slider" value="3">
           </div>
 
           <div class="slider-control-group">
