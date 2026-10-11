@@ -25,12 +25,10 @@ class AppTheme {
       colorScheme: ColorScheme.light(
         primary: AppColors.primaryOrange,
         secondary: AppColors.highlightYellow,
-        background: AppColors.backgroundCream,
         surface: AppColors.surfacePrimary,
         error: AppColors.errorRed,
         onPrimary: Colors.white,
         onSecondary: AppColors.textPrimary,
-        onBackground: AppColors.textPrimary,
         onSurface: AppColors.textPrimary,
         onError: Colors.white,
       ),

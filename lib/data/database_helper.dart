@@ -96,7 +96,6 @@ class DatabaseHelper {
   }
 
   Future<Map<String, dynamic>> getPerformanceStats() async {
-    final db = await instance.database;
     final sessions = await getSessionResults();
 
     int totalSessions = sessions.length;

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants.dart';
 import '../../core/theme.dart';
-import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../progress/progress_screen.dart';
 import '../profile/profile_screen.dart';
@@ -17,6 +17,23 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentTabIndex = 0;
+  bool _isNavigating = false;
+
+  void _onCategoryTapped(String category) {
+    if (_isNavigating) return;
+    setState(() => _isNavigating = true);
+    HapticFeedback.selectionClick();
+
+    if (category == 'Arithmetic' || category == 'Basic Arithmetic') {
+      context.push('/operations/arithmetic').then((_) {
+        if (mounted) setState(() => _isNavigating = false);
+      });
+    } else {
+      context.push('/config/${Uri.encodeComponent(category)}').then((_) {
+        if (mounted) setState(() => _isNavigating = false);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +59,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         selectedItemColor: AppColors.primaryOrange,
         unselectedItemColor: AppColors.textSecondary,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Progress'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart_rounded), label: 'Progress'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
         ],
       ),
     );
@@ -59,159 +76,136 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final todayMinutes = statsState.value?['todayPracticeMinutes'] as int? ?? 0;
 
     return SafeArea(
-      child: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 360;
+          final crossAxisCount = isNarrow ? 1 : 2;
+          final childAspectRatio = isNarrow ? 2.3 : 0.88;
+
+          return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      // Header User Profile Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            "Hey, $displayName!",
-                            style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: 28),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "Ready to calculate faster today?",
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  color: AppColors.textSecondary,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Hey, $displayName!",
+                                  style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: 26),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "Ready to calculate faster today?",
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _currentTabIndex = 2; // Switch to profile tab
+                              });
+                            },
+                            child: CircleAvatar(
+                              backgroundColor: AppColors.pastelPurple,
+                              radius: 22,
+                              child: Text(
+                                displayName.isNotEmpty ? displayName[0].toUpperCase() : 'C',
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 17),
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _currentTabIndex = 3; // Switch to profile tab
-                          });
-                        },
-                        child: CircleAvatar(
-                          backgroundColor: AppColors.pastelPurple,
-                          radius: 24,
-                          child: Text(
-                            displayName.isNotEmpty ? displayName[0].toUpperCase() : 'C',
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  _buildDailyGoalCard(context, dailyGoal, todayMinutes),
-                  const SizedBox(height: 28),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Practice Categories",
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      Text(
-                        "${AppConstants.categories.length} Modules",
-                        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.9,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  return _buildCategoryCard(
-                    context,
-                    category: AppConstants.categories[index],
-                    color: _getCategoryColor(index),
-                    icon: _getCategoryIcon(index),
-                    onTap: () {
-                      context.push('/config/${Uri.encodeComponent(AppConstants.categories[index])}');
-                    },
-                  );
-                },
-                childCount: AppConstants.categories.length,
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
-        ],
-      ),
-    );
-  }
+                      const SizedBox(height: 20),
 
-  Widget _buildPracticeTab(BuildContext context) {
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(24.0),
-        children: [
-          Text("Quick Practice", style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: 28)),
-          const SizedBox(height: 6),
-          Text("Pick any mode and train under competitive exam conditions.", style: TextStyle(color: AppColors.textSecondary)),
-          const SizedBox(height: 20),
-          Card(
-            color: AppColors.primaryOrange.withOpacity(0.12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: ListTile(
-              leading: const Icon(Icons.flash_on, color: AppColors.primaryOrange, size: 36),
-              title: const Text("Rapid 60-Second Blitz", style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text("Mixed questions across all competitive math areas"),
-              trailing: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryOrange,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      // Daily Goal Card
+                      _buildDailyGoalCard(context, dailyGoal, todayMinutes),
+                      const SizedBox(height: 24),
+
+                      // Section Header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Practice Categories",
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 20),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryOrange.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              "${AppConstants.categories.length} Modules",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryOrange,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+                  ),
                 ),
-                onPressed: () {
-                  final config = PracticeConfiguration(
-                    category: 'Mixed Practice',
-                    timerSeconds: 60,
-                    questionCount: 20,
-                  );
-                  context.push('/session', extra: config);
-                },
-                child: const Text("Start Blitz"),
               ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text("All Topics", style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 12),
-          ...AppConstants.categories.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final cat = entry.value;
-            return Card(
-              color: Colors.white,
-              margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: _getCategoryColor(idx).withOpacity(0.7),
-                  child: Icon(_getCategoryIcon(idx), color: AppColors.textPrimary, size: 20),
+
+              // Categories Grid
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                sliver: SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 14,
+                    childAspectRatio: childAspectRatio,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final categoryKey = AppConstants.categories[index];
+                      final metadata = AppConstants.categoryDetails[categoryKey] ??
+                          CategoryMetadata(
+                            title: categoryKey,
+                            description: 'Mental calculation drill',
+                            icon: Icons.calculate_rounded,
+                            color: AppColors.pastelBlue,
+                          );
+
+                      return _buildCategoryCard(
+                        context,
+                        metadata: metadata,
+                        categoryKey: categoryKey,
+                        onTap: () => _onCategoryTapped(categoryKey),
+                      );
+                    },
+                    childCount: AppConstants.categories.length,
+                  ),
                 ),
-                title: Text(cat, style: const TextStyle(fontWeight: FontWeight.bold)),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary),
-                onTap: () {
-                  context.push('/config/${Uri.encodeComponent(cat)}');
-                },
               ),
-            );
-          }).toList(),
-        ],
+              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+            ],
+          );
+        },
       ),
     );
   }
@@ -225,7 +219,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(18.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -234,38 +228,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.local_fire_department, color: AppColors.primaryOrange, size: 24),
+                    const Icon(Icons.local_fire_department_rounded, color: AppColors.primaryOrange, size: 24),
                     const SizedBox(width: 8),
-                    Text("Daily Practice Goal", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18)),
+                    Text("Daily Practice Goal", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 17)),
                   ],
                 ),
                 if (isGoalReached)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(color: AppColors.pastelGreen, borderRadius: BorderRadius.circular(12)),
-                    child: const Text("Goal Met!", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: const Text("Goal Met!", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
-              isGoalReached ? "Target achieved! Keep pushing your record." : "Stay consistent to build razor-sharp mental arithmetic.",
-              style: Theme.of(context).textTheme.bodyMedium,
+              isGoalReached ? "Target achieved! Keep pushing your streak." : "Stay consistent to build rapid mental calculation reflexes.",
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             LinearProgressIndicator(
               value: progress,
               backgroundColor: AppColors.backgroundCream,
               color: AppColors.primaryOrange,
-              minHeight: 12,
+              minHeight: 10,
               borderRadius: BorderRadius.circular(6),
             ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("$todayMinutes / $goalMinutes minutes today", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                Text("${(progress * 100).toInt()}%", style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                Text("$todayMinutes / $goalMinutes minutes today", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                Text("${(progress * 100).toInt()}%", style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
               ],
             ),
           ],
@@ -276,34 +270,84 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildCategoryCard(
     BuildContext context, {
-    required String category,
-    required Color color,
-    required IconData icon,
+    required CategoryMetadata metadata,
+    required String categoryKey,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        color: color,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        elevation: 0,
-        child: Padding(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        splashColor: metadata.color.withOpacity(0.3),
+        highlightColor: metadata.color.withOpacity(0.15),
+        child: Container(
+          decoration: BoxDecoration(
+            color: metadata.color.withOpacity(0.32),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: metadata.color.withOpacity(0.7),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.6),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: AppColors.textPrimary, size: 22),
+              // Native Icon Circle
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(metadata.icon, color: AppColors.textPrimary, size: 22),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 16,
+                    color: AppColors.textPrimary.withOpacity(0.5),
+                  ),
+                ],
               ),
               const Spacer(),
+              // Title
               Text(
-                category,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 16, height: 1.2),
+                metadata.title,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontSize: 16,
+                      height: 1.2,
+                    ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              // Short Description
+              Text(
+                metadata.description,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textPrimary.withOpacity(0.75),
+                      fontSize: 11.5,
+                      height: 1.25,
+                    ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -312,37 +356,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
-  }
-
-  Color _getCategoryColor(int index) {
-    final colors = [
-      AppColors.pastelBlue,
-      AppColors.pastelGreen,
-      AppColors.pastelPink,
-      AppColors.pastelPurple,
-      AppColors.highlightYellow,
-      AppColors.pastelBlue,
-      AppColors.pastelGreen,
-      AppColors.pastelPink,
-      AppColors.pastelPurple,
-      AppColors.highlightYellow,
-    ];
-    return colors[index % colors.length];
-  }
-
-  IconData _getCategoryIcon(int index) {
-    final icons = [
-      Icons.calculate,
-      Icons.shuffle,
-      Icons.functions,
-      Icons.format_list_numbered,
-      Icons.compare_arrows,
-      Icons.psychology,
-      Icons.question_mark,
-      Icons.extension,
-      Icons.category,
-      Icons.build,
-    ];
-    return icons[index % icons.length];
   }
 }

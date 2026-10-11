@@ -31,63 +31,122 @@ class QuestionGenerator {
   static GeneratedQuestion _generateSingleQuestion(PracticeConfiguration config, String id) {
     String category = config.category;
     if (category == 'Mixed Practice' || category == 'Custom Practice') {
-      final pool = [
-        'Basic Arithmetic',
-        'Random Calculations',
-        'BODMAS Challenge',
-        'Number Series',
-        'Inequalities',
-        'Mental Calculation',
-        'Missing Number',
-        'Number Puzzles',
-      ];
+      List<String> pool = config.enabledCategories != null && config.enabledCategories!.isNotEmpty
+          ? config.enabledCategories!
+          : [
+              'Arithmetic',
+              'Random Calculations',
+              'BODMAS Challenge',
+              'Number Series',
+              'Inequalities',
+              'Mental Maths',
+              'Missing Number',
+              'Number Puzzles',
+            ];
       category = pool[_random.nextInt(pool.length)];
     }
 
     switch (category) {
+      case 'Arithmetic':
       case 'Basic Arithmetic':
-        return _generateArithmetic(id, config.difficulty);
+        return _generateArithmetic(id, config);
       case 'Random Calculations':
-        return _generateRandomCalculations(id, config.difficulty);
+        return _generateRandomCalculations(id, config);
       case 'BODMAS Challenge':
         return _generateBodmas(id, config.difficulty);
       case 'Number Series':
         return _generateNumberSeries(id, config.difficulty);
       case 'Inequalities':
         return _generateInequality(id, config.difficulty);
+      case 'Mental Maths':
       case 'Mental Calculation':
-        return _generateMentalCalculation(id, config.difficulty);
+        return _generateMentalCalculation(id, config);
       case 'Missing Number':
         return _generateMissingNumber(id, config.difficulty);
       case 'Number Puzzles':
         return _generateNumberPuzzle(id, config.difficulty);
       default:
-        return _generateArithmetic(id, config.difficulty);
+        return _generateArithmetic(id, config);
     }
   }
 
-  // 1. Basic Arithmetic - guaranteed distinct operands (a != b)
-  static GeneratedQuestion _generateArithmetic(String id, String difficulty) {
-    final ops = ['+', '-', '×', '÷'];
-    final op = ops[_random.nextInt(ops.length)];
-    int maxVal = difficulty == 'Hard' ? 99 : (difficulty == 'Medium' ? 50 : 25);
-    int minVal = difficulty == 'Hard' ? 15 : (difficulty == 'Medium' ? 10 : 2);
+  // 1. Arithmetic - guaranteed distinct operands (a != b) & custom operation support
+  static GeneratedQuestion _generateArithmetic(String id, PracticeConfiguration config) {
+    final difficulty = config.difficulty;
+    final operation = config.operation;
+    final digits = config.digits;
+    final operandsCount = config.operandsCount;
 
-    int a = minVal + _random.nextInt(maxVal - minVal + 1);
-    int b = minVal + _random.nextInt(maxVal - minVal + 1);
-    while (b == a) {
-      b = minVal + _random.nextInt(maxVal - minVal + 1);
+    String op;
+    if (operation == 'Addition') {
+      op = '+';
+    } else if (operation == 'Subtraction') {
+      op = '-';
+    } else if (operation == 'Multiplication') {
+      op = '×';
+    } else if (operation == 'Division') {
+      op = '÷';
+    } else {
+      final ops = ['+', '-', '×', '÷'];
+      op = ops[_random.nextInt(ops.length)];
+    }
+
+    // Determine range by digit configuration
+    int minVal;
+    int maxVal;
+    if (digits == 1) {
+      minVal = 2;
+      maxVal = 9;
+    } else if (digits == 3) {
+      minVal = 100;
+      maxVal = 499;
+    } else {
+      // 2-digit default
+      minVal = difficulty == 'Hard' ? 15 : (difficulty == 'Medium' ? 10 : 10);
+      maxVal = difficulty == 'Hard' ? 99 : (difficulty == 'Medium' ? 75 : 50);
     }
 
     int answer;
     String expr;
     String explanation;
 
-    if (op == '+') {
+    if (operandsCount == 3 && (op == '+' || op == '-' || operation == 'Mixed Operations')) {
+      // 3-operand arithmetic
+      int a = minVal + _random.nextInt(maxVal - minVal + 1);
+      int b = minVal + _random.nextInt(maxVal - minVal + 1);
+      int c = minVal + _random.nextInt(maxVal - minVal + 1);
+      while (b == a) {
+        b = minVal + _random.nextInt(maxVal - minVal + 1);
+      }
+      while (c == a || c == b) {
+        c = minVal + _random.nextInt(maxVal - minVal + 1);
+      }
+
+      if (op == '-') {
+        int total = a + b + c;
+        answer = total - a - b;
+        expr = '$total - $a - $b = ?';
+        explanation = 'Subtract in stages: $total - $a = ${total - a}, then ${total - a} - $b = $answer.';
+      } else {
+        answer = a + b + c;
+        expr = '$a + $b + $c = ?';
+        explanation = 'Group friendly numbers: ($a + $b) = ${a + b}, then ${a + b} + $c = $answer.';
+      }
+    } else if (op == '+') {
+      int a = minVal + _random.nextInt(maxVal - minVal + 1);
+      int b = minVal + _random.nextInt(maxVal - minVal + 1);
+      while (b == a) {
+        b = minVal + _random.nextInt(maxVal - minVal + 1);
+      }
       answer = a + b;
       expr = '$a + $b = ?';
       explanation = 'Mental shortcut: Break into tens and units: ($a) + ($b) = ${((a ~/ 10) + (b ~/ 10)) * 10} + ${(a % 10) + (b % 10)} = $answer.';
     } else if (op == '-') {
+      int a = minVal + _random.nextInt(maxVal - minVal + 1);
+      int b = minVal + _random.nextInt(maxVal - minVal + 1);
+      while (b == a) {
+        b = minVal + _random.nextInt(maxVal - minVal + 1);
+      }
       if (a < b) {
         int temp = a; a = b; b = temp;
       }
@@ -95,19 +154,30 @@ class QuestionGenerator {
       expr = '$a - $b = ?';
       explanation = 'Subtract in chunks: $a - ${(b ~/ 10) * 10} = ${a - ((b ~/ 10) * 10)}, then subtract ${b % 10} = $answer.';
     } else if (op == '×') {
-      int mulA = difficulty == 'Hard' ? (_random.nextInt(15) + 6) : (_random.nextInt(10) + 3);
-      int mulB = difficulty == 'Hard' ? (_random.nextInt(12) + 4) : (_random.nextInt(9) + 2);
-      while (mulB == mulA) {
+      int mulA;
+      int mulB;
+      if (digits == 1) {
+        mulA = _random.nextInt(8) + 2;
+        mulB = _random.nextInt(8) + 2;
+      } else if (digits == 3) {
+        mulA = _random.nextInt(90) + 10;
+        mulB = _random.nextInt(80) + 12;
+      } else {
+        mulA = difficulty == 'Hard' ? (_random.nextInt(15) + 6) : (_random.nextInt(10) + 3);
         mulB = difficulty == 'Hard' ? (_random.nextInt(12) + 4) : (_random.nextInt(9) + 2);
+      }
+      while (mulB == mulA) {
+        mulB = mulB + 1;
       }
       answer = mulA * mulB;
       expr = '$mulA × $mulB = ?';
-      explanation = 'Multiplication: $mulA × $mulB = $answer. You can decompose: $mulA × ${mulB ~/ 2} × 2.';
+      explanation = 'Multiplication: $mulA × $mulB = $answer. Mental decomposition: $mulA × ${mulB ~/ 2} × 2.';
     } else {
-      int divisor = _random.nextInt(10) + 2;
-      int quotient = _random.nextInt(12) + 2;
+      // Division
+      int divisor = digits == 1 ? (_random.nextInt(7) + 2) : (_random.nextInt(12) + 2);
+      int quotient = digits == 1 ? (_random.nextInt(8) + 2) : (_random.nextInt(15) + 2);
       while (quotient == divisor) {
-        quotient = _random.nextInt(12) + 2;
+        quotient = quotient + 1;
       }
       int dividend = divisor * quotient;
       answer = quotient;
@@ -117,7 +187,7 @@ class QuestionGenerator {
 
     return GeneratedQuestion(
       id: id,
-      category: 'Basic Arithmetic',
+      category: config.category,
       questionType: 'arithmetic',
       displayExpression: expr,
       correctAnswer: answer.toString(),
@@ -128,8 +198,17 @@ class QuestionGenerator {
   }
 
   // 2. Random Calculations - distinct operands
-  static GeneratedQuestion _generateRandomCalculations(String id, String difficulty) {
+  static GeneratedQuestion _generateRandomCalculations(String id, PracticeConfiguration config) {
+    final difficulty = config.difficulty;
+    final enabled = config.enabledOperations ?? ['Addition', 'Subtraction', 'Multiplication', 'Squares'];
+
     int mode = _random.nextInt(3);
+    if (enabled.contains('Squares') && !enabled.contains('Percentages') && mode == 1) {
+      mode = 0;
+    } else if (enabled.contains('Percentages') && !enabled.contains('Squares') && mode == 0) {
+      mode = 1;
+    }
+
     if (mode == 0) {
       // Square calculation
       int n = difficulty == 'Hard' ? (_random.nextInt(20) + 15) : (_random.nextInt(15) + 5);
@@ -138,7 +217,7 @@ class QuestionGenerator {
       String explanation = 'Square of $n: $n × $n = $answer. Mental tip: ${(n - 1)} × ${(n + 1)} + 1 = ${(n - 1) * (n + 1)} + 1 = $answer.';
       return GeneratedQuestion(
         id: id,
-        category: 'Random Calculations',
+        category: config.category,
         questionType: 'square',
         displayExpression: expr,
         correctAnswer: answer.toString(),
@@ -359,16 +438,18 @@ class QuestionGenerator {
     );
   }
 
-  // 6. Mental Calculation (Sequential operations with non-repeating delta)
-  static GeneratedQuestion _generateMentalCalculation(String id, String difficulty) {
-    int stepCount = difficulty == 'Hard' ? 5 : (difficulty == 'Medium' ? 4 : 3);
+  // 6. Mental Maths / Calculation (Sequential operations with non-repeating delta)
+  static GeneratedQuestion _generateMentalCalculation(String id, PracticeConfiguration config) {
+    final difficulty = config.difficulty;
+    final mode = config.subType ?? 'Add & Subtract (+/-)';
+    int stepCount = config.operandsCount >= 3 ? config.operandsCount : (difficulty == 'Hard' ? 5 : (difficulty == 'Medium' ? 4 : 3));
     int current = _random.nextInt(20) + 15;
     List<String> steps = [current.toString()];
     List<String> stepExplanations = ['Start with $current'];
 
     int lastVal = -1;
     for (int i = 1; i < stepCount; i++) {
-      bool isAdd = _random.nextBool();
+      bool isAdd = mode.contains('Addition only') ? true : _random.nextBool();
       int val = _random.nextInt(12) + 3;
       while (val == lastVal) {
         val = _random.nextInt(12) + 3;
@@ -392,7 +473,7 @@ class QuestionGenerator {
 
     return GeneratedQuestion(
       id: id,
-      category: 'Mental Calculation',
+      category: config.category,
       questionType: 'mental',
       displayExpression: expr,
       correctAnswer: answer.toString(),

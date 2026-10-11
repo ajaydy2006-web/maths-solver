@@ -86,6 +86,13 @@ class PracticeConfiguration {
   final int answerOptions;
   final bool instantFeedback;
   final bool hintsEnabled;
+  final String? operation;
+  final int digits;
+  final int operandsCount;
+  final String? subType;
+  final List<String>? enabledOperations;
+  final List<String>? enabledCategories;
+  final double stepDurationSeconds;
 
   PracticeConfiguration({
     required this.category,
@@ -95,6 +102,13 @@ class PracticeConfiguration {
     this.answerOptions = 4,
     this.instantFeedback = true,
     this.hintsEnabled = false,
+    this.operation,
+    this.digits = 2,
+    this.operandsCount = 2,
+    this.subType,
+    this.enabledOperations,
+    this.enabledCategories,
+    this.stepDurationSeconds = 1.4,
   });
 }
 

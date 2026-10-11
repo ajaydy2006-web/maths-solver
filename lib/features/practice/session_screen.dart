@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
-import '../../data/providers.dart';
 import '../../services/question_generator.dart';
 
 class SessionScreen extends ConsumerStatefulWidget {
@@ -18,17 +17,15 @@ class SessionScreen extends ConsumerStatefulWidget {
 class _SessionScreenState extends ConsumerState<SessionScreen> {
   late List<GeneratedQuestion> _questions;
   int _currentIndex = 0;
-  
+
   int _correctCount = 0;
   int _wrongCount = 0;
-  int _consecutiveWrongCount = 0; // For 3-wrong restart rule
-  
+
   Timer? _timer;
+  final Stopwatch _stopwatch = Stopwatch();
   int _remainingSeconds = 0;
   bool _isSubmitting = false;
-
-  late int _wrongThreshold;
-  late bool _threeWrongRestartEnabled;
+  bool _isFinished = false;
 
   final List<QuestionAttempt> _attempts = [];
   DateTime _questionStartTime = DateTime.now();
@@ -36,9 +33,6 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
   @override
   void initState() {
     super.initState();
-    final prefs = ref.read(userPreferencesNotifierProvider).value;
-    _wrongThreshold = prefs?.wrongAnswerThreshold ?? 3;
-    _threeWrongRestartEnabled = prefs?.threeWrongRestartEnabled ?? true;
     _startSession();
   }
 
@@ -48,40 +42,79 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     _correctCount = 0;
     _wrongCount = 0;
     _attempts.clear();
-    _remainingSeconds = 0;
+    final targetDuration = widget.config.timerSeconds > 0 ? widget.config.timerSeconds : 60;
+    _remainingSeconds = targetDuration;
     _questionStartTime = DateTime.now();
-    
+    _isFinished = false;
+    _isSubmitting = false;
+
+    _stopwatch.reset();
+    _stopwatch.start();
+
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
-      setState(() {
-        _remainingSeconds++;
-      });
+      if (_isFinished) {
+        timer.cancel();
+        return;
+      }
+      final elapsedMs = _stopwatch.elapsedMilliseconds;
+      final elapsedSecs = elapsedMs ~/ 1000;
+      final remaining = targetDuration - elapsedSecs;
+
+      if (remaining <= 0) {
+        _stopwatch.stop();
+        timer.cancel();
+        _timer = null;
+        if (mounted) {
+          setState(() {
+            _remainingSeconds = 0;
+          });
+        }
+        _finalizeSession();
+      } else if (remaining != _remainingSeconds) {
+        if (mounted) {
+          setState(() {
+            _remainingSeconds = remaining;
+          });
+        }
+      }
     });
   }
 
-  void _finalizeSession({bool terminatedDueToMistakes = false}) {
+  void _finalizeSession() {
+    if (_isFinished) return;
+    _isFinished = true;
+    _isSubmitting = true;
+    _stopwatch.stop();
     _timer?.cancel();
-    
+    _timer = null;
+
+    final targetDuration = widget.config.timerSeconds > 0 ? widget.config.timerSeconds : 60;
+    final elapsedSecs = _stopwatch.elapsedMilliseconds ~/ 1000;
+    final durationSeconds = elapsedSecs > 0 ? (elapsedSecs > targetDuration ? targetDuration : elapsedSecs) : targetDuration;
+
     final result = {
       'category': widget.config.category,
       'score': _correctCount * 10,
       'correctAnswers': _correctCount,
       'incorrectAnswers': _wrongCount,
       'totalQuestions': _attempts.length,
-      'durationSeconds': _remainingSeconds,
+      'durationSeconds': durationSeconds,
       'attempts': _attempts,
-      'terminated': terminatedDueToMistakes,
+      'terminated': false,
     };
-    
-    context.pushReplacement('/results', extra: result);
+
+    if (mounted) {
+      context.pushReplacement('/results', extra: result);
+    }
   }
 
   void _submitAnswer(String selectedOption) async {
-    if (_isSubmitting) return;
+    if (_isSubmitting || _isFinished || _remainingSeconds <= 0) return;
     setState(() {
       _isSubmitting = true;
     });
@@ -105,15 +138,9 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       _wrongCount++;
     }
 
-    await Future.delayed(const Duration(milliseconds: 350));
-    
-    if (!mounted) return;
+    await Future.delayed(const Duration(milliseconds: 220));
 
-    if (_wrongCount >= _wrongThreshold) {
-      _isSubmitting = false;
-      _finalizeSession(terminatedDueToMistakes: true);
-      return;
-    }
+    if (!mounted || _isFinished || _remainingSeconds <= 0) return;
 
     setState(() {
       _currentIndex++;
@@ -125,8 +152,37 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     });
   }
 
+  void _confirmExit() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("End Session?"),
+        content: const Text("Would you like to finish this session now and see your results?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text("Continue"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryOrange,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _finalizeSession();
+            },
+            child: const Text("View Results"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    _stopwatch.stop();
     _timer?.cancel();
     super.dispose();
   }
@@ -141,27 +197,41 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       backgroundColor: AppColors.backgroundCream,
       appBar: AppBar(
         title: Text(widget.config.category, style: Theme.of(context).textTheme.titleLarge),
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: AppColors.textPrimary),
+          onPressed: _confirmExit,
+          tooltip: 'End Session',
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Center(
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.surfacePrimary,
+                  color: _remainingSeconds <= 5
+                      ? AppColors.errorRed.withOpacity(0.12)
+                      : AppColors.surfacePrimary,
                   borderRadius: BorderRadius.circular(16),
+                  border: _remainingSeconds <= 5
+                      ? Border.all(color: AppColors.errorRed.withOpacity(0.5))
+                      : null,
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.timer_outlined, size: 18, color: AppColors.primaryOrange),
+                    Icon(
+                      Icons.timer_outlined,
+                      size: 18,
+                      color: _remainingSeconds <= 5 ? AppColors.errorRed : AppColors.primaryOrange,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       _formatTime(_remainingSeconds),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: _remainingSeconds < 10 ? AppColors.errorRed : AppColors.primaryOrange,
-                        fontWeight: FontWeight.bold,
-                      ),
+                            color: _remainingSeconds <= 5 ? AppColors.errorRed : AppColors.primaryOrange,
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   ],
                 ),
@@ -171,93 +241,159 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header with counter and lives indicator
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxHeight < 600;
+            final hPadding = constraints.maxWidth < 360 ? 14.0 : 24.0;
+            final questionFontSize = isCompact ? 32.0 : 40.0;
+            final answerFontSize = isCompact ? 18.0 : 22.0;
+            final answerAspect = isCompact ? 2.6 : 2.1;
+            final answerSpacing = isCompact ? 10.0 : 16.0;
+
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: isCompact ? 8.0 : 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    "Question ${_currentIndex + 1}",
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-                  ),
-                  if (_threeWrongRestartEnabled)
-                    Row(
-                      children: List.generate(_wrongThreshold, (idx) {
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 4.0),
-                          child: Icon(
-                            Icons.favorite,
-                            size: 16,
-                            color: idx < (_wrongThreshold - _wrongCount)
-                                ? AppColors.errorRed
-                                : Colors.grey.shade400,
+                  // Header with counter and live correct/wrong indicators
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfacePrimary,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        );
-                      }),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Center(
-                  child: Card(
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                    elevation: 3,
-                    shadowColor: Colors.black.withOpacity(0.06),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
-                      child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
                           child: Text(
-                            currentQuestion.displayExpression,
-                            style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                              fontSize: 40,
-                              letterSpacing: 1.2,
+                            "Question ${_currentIndex + 1}",
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.pastelGreen.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            textAlign: TextAlign.center,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.check_circle, size: 14, color: AppColors.successGreen),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "$_correctCount",
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.successGreen,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.pastelPink.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.cancel, size: 14, color: AppColors.errorRed),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "$_wrongCount",
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.errorRed,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isCompact ? 8 : 12),
+                  Expanded(
+                    child: Center(
+                      child: Card(
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                        elevation: 3,
+                        shadowColor: Colors.black.withOpacity(0.06),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: isCompact ? 16.0 : 24.0,
+                            horizontal: 16.0,
+                          ),
+                          child: Center(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                currentQuestion.displayExpression,
+                                style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                      fontSize: questionFontSize,
+                                      letterSpacing: 1.2,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                  SizedBox(height: isCompact ? 8 : 16),
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    mainAxisSpacing: answerSpacing,
+                    crossAxisSpacing: answerSpacing,
+                    childAspectRatio: answerAspect,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: currentQuestion.answerOptions.map((option) {
+                      return ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.surfacePrimary,
+                          foregroundColor: AppColors.textPrimary,
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                        onPressed: (_isSubmitting || _isFinished) ? null : () => _submitAnswer(option),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            option,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontSize: answerFontSize,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  SizedBox(height: isCompact ? 8 : 24),
+                ],
               ),
-              const SizedBox(height: 16),
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 2.1,
-                physics: const NeverScrollableScrollPhysics(),
-                children: currentQuestion.answerOptions.map((option) {
-                  return ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.surfacePrimary,
-                      foregroundColor: AppColors.textPrimary,
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    ),
-                    onPressed: _isSubmitting ? null : () => _submitAnswer(option),
-                    child: Text(
-                      option,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

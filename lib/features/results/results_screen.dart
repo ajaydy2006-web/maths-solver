@@ -40,8 +40,18 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
 
       await DatabaseHelper.instance.saveSessionResult(dbData);
       ref.read(statsNotifierProvider.notifier).loadStats();
-    } catch (e) {
-      // In-memory fallback if storage write fails
+    } catch (_) {}
+  }
+
+  String _formatDuration(int seconds) {
+    final m = (seconds / 60).floor();
+    final s = seconds % 60;
+    if (m > 0 && s > 0) {
+      return '$m min $s sec';
+    } else if (m > 0) {
+      return '$m min${m > 1 ? 's' : ''}';
+    } else {
+      return '$s sec';
     }
   }
 
@@ -51,198 +61,344 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     final total = widget.result['totalQuestions'] as int? ?? 0;
     final duration = widget.result['durationSeconds'] as int? ?? 0;
     final category = widget.result['category'] as String? ?? 'Practice';
-    final terminated = widget.result['terminated'] as bool? ?? false;
     final accuracy = total > 0 ? ((correct / total) * 100).toStringAsFixed(1) : '0';
     final avgSpeed = total > 0 ? (duration / total).toStringAsFixed(1) : '0';
+    final score = widget.result['score'] ?? 0;
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundCream,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => context.go('/home'),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.go('/home');
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundCream,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            onPressed: () => context.go('/home'),
+          ),
+          title: const Text(
+            "Session Summary",
+            style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
         ),
-        title: Text(
-          terminated ? "Game Over" : "Results",
-          style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 8),
-              // Badge
-              Center(
-                child: Container(
-                  width: 110,
-                  height: 110,
-                  decoration: BoxDecoration(
-                    color: terminated
-                        ? AppColors.errorRed.withOpacity(0.12)
-                        : AppColors.highlightYellow.withOpacity(0.2),
-                    shape: BoxShape.circle,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxHeight < 620;
+              final isNarrow = constraints.maxWidth < 360;
+              final trophySize = isCompact ? 56.0 : 80.0;
+              final iconSize = isCompact ? 32.0 : 48.0;
+              final hPadding = isNarrow ? 14.0 : 20.0;
+              final titleFontSize = isCompact ? 22.0 : 28.0;
+              final buttonHeight = isCompact ? 44.0 : 50.0;
+              final buttonFontSize = isCompact ? 13.5 : 15.0;
+              final statTileFontSize = isCompact ? 18.0 : 24.0;
+
+              return SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.symmetric(
+                  horizontal: hPadding,
+                  vertical: isCompact ? 6.0 : 14.0,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - (isCompact ? 12.0 : 28.0),
                   ),
-                  child: Center(
-                    child: Icon(
-                      terminated ? Icons.highlight_off_rounded : Icons.emoji_events,
-                      size: 70,
-                      color: terminated ? AppColors.errorRed : AppColors.primaryOrange,
+                  child: IntrinsicHeight(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Badge Header
+                        Center(
+                          child: Container(
+                            width: trophySize,
+                            height: trophySize,
+                            decoration: BoxDecoration(
+                              color: AppColors.highlightYellow.withOpacity(0.35),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.highlightYellow.withOpacity(0.4),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.emoji_events_rounded,
+                                size: iconSize,
+                                color: AppColors.primaryOrange,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: isCompact ? 6 : 12),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            "Session Complete!",
+                            style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                  fontSize: titleFontSize,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            "$category • ${_formatDuration(duration)} practice",
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        SizedBox(height: isCompact ? 10 : 16),
+
+                        // Accuracy Progress Bar
+                        if (total > 0) ...[
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: SizedBox(
+                              height: 8,
+                              child: Row(
+                                children: [
+                                  if (correct > 0)
+                                    Expanded(
+                                      flex: correct,
+                                      child: Container(color: AppColors.successGreen),
+                                    ),
+                                  if (total - correct > 0)
+                                    Expanded(
+                                      flex: total - correct,
+                                      child: Container(color: AppColors.errorRed.withOpacity(0.7)),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: isCompact ? 10 : 16),
+                        ],
+
+                        // Responsive 2x2 Stats Grid (Adapts cleanly to all screen sizes)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatTile(
+                                context,
+                                title: "Total Score",
+                                value: "$score pts",
+                                subtitle: "Points earned",
+                                color: AppColors.primaryOrange,
+                                icon: Icons.military_tech_rounded,
+                                isCompact: isCompact,
+                                valueFontSize: statTileFontSize,
+                              ),
+                            ),
+                            SizedBox(width: isNarrow ? 8 : 12),
+                            Expanded(
+                              child: _buildStatTile(
+                                context,
+                                title: "Accuracy",
+                                value: "$accuracy%",
+                                subtitle: "Success rate",
+                                color: AppColors.successGreen,
+                                icon: Icons.pie_chart_outline_rounded,
+                                isCompact: isCompact,
+                                valueFontSize: statTileFontSize,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: isNarrow ? 8 : 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatTile(
+                                context,
+                                title: "Correct Answers",
+                                value: "$correct / $total",
+                                subtitle: "Questions solved",
+                                color: AppColors.pastelBlue,
+                                icon: Icons.check_circle_outline_rounded,
+                                isCompact: isCompact,
+                                valueFontSize: statTileFontSize,
+                              ),
+                            ),
+                            SizedBox(width: isNarrow ? 8 : 12),
+                            Expanded(
+                              child: _buildStatTile(
+                                context,
+                                title: "Avg Speed",
+                                value: "$avgSpeed s",
+                                subtitle: "Per question",
+                                color: AppColors.pastelPurple,
+                                icon: Icons.speed_rounded,
+                                isCompact: isCompact,
+                                valueFontSize: statTileFontSize,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Spacer pushes buttons to the bottom when space allows
+                        const Spacer(),
+                        SizedBox(height: isCompact ? 14 : 24),
+
+                        // Primary Action: Back to Home
+                        SizedBox(
+                          height: buttonHeight,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryOrange,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                              elevation: 2,
+                            ),
+                            icon: const Icon(Icons.home_rounded, size: 20),
+                            label: Text(
+                              "Back to Home",
+                              style: TextStyle(fontSize: buttonFontSize, fontWeight: FontWeight.bold),
+                            ),
+                            onPressed: () => context.go('/home'),
+                          ),
+                        ),
+                        SizedBox(height: isCompact ? 6 : 10),
+
+                        // Secondary Action: Review Answers
+                        SizedBox(
+                          height: buttonHeight,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.pastelPurple.withOpacity(0.6),
+                              foregroundColor: AppColors.textPrimary,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            ),
+                            icon: const Icon(Icons.visibility_rounded, size: 18),
+                            label: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                "Review Answers & Explanations",
+                                style: TextStyle(fontSize: buttonFontSize - 0.5, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            onPressed: () {
+                              context.push('/review', extra: widget.result);
+                            },
+                          ),
+                        ),
+                        SizedBox(height: isCompact ? 6 : 10),
+
+                        // Tertiary Action: Practice Again
+                        SizedBox(
+                          height: buttonHeight - 2,
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.textPrimary,
+                              side: const BorderSide(color: Colors.black26),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            ),
+                            icon: const Icon(Icons.replay_rounded, size: 18),
+                            label: Text(
+                              "Practice Again",
+                              style: TextStyle(fontSize: buttonFontSize - 0.5, fontWeight: FontWeight.w600),
+                            ),
+                            onPressed: () {
+                              context.pushReplacement('/config/${Uri.encodeComponent(category)}');
+                            },
+                          ),
+                        ),
+
+                        SizedBox(height: MediaQuery.of(context).padding.bottom + 12),
+                      ],
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                terminated ? "Game Over" : "Session Complete!",
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: 30),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                terminated
-                    ? "$category • Terminated after 3 mistakes"
-                    : category,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontSize: 16,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 28),
-
-              // Main Stats Card
-              Card(
-                color: AppColors.surfacePrimary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                elevation: 3,
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      _buildStatRow(
-                        context,
-                        "Total Score",
-                        "${widget.result['score'] ?? 0} pts",
-                        AppColors.primaryOrange,
-                        Icons.military_tech,
-                      ),
-                      const Divider(height: 28),
-                      _buildStatRow(
-                        context,
-                        "Correct Answers",
-                        "$correct Correct (out of $total)",
-                        AppColors.successGreen,
-                        Icons.check_circle_outline,
-                      ),
-                      const Divider(height: 28),
-                      _buildStatRow(
-                        context,
-                        "Accuracy",
-                        "$accuracy%",
-                        AppColors.pastelBlue,
-                        Icons.pie_chart_outline,
-                      ),
-                      const Divider(height: 28),
-                      _buildStatRow(
-                        context,
-                        "Avg Speed",
-                        "$avgSpeed s/Q",
-                        AppColors.darkSlate,
-                        Icons.speed,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 28),
-
-              // Action Buttons
-              SizedBox(
-                height: 54,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryOrange,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                  ),
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text("Back to Home", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  onPressed: () => context.go('/home'),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 54,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.pastelPurple,
-                    foregroundColor: AppColors.textPrimary,
-                    elevation: 1,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                  ),
-                  icon: const Icon(Icons.visibility),
-                  label: const Text("Review Answers & Explanations"),
-                  onPressed: () {
-                    context.push('/review', extra: widget.result);
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 54,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textPrimary,
-                    side: const BorderSide(color: Colors.black26),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                  ),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text("Practice Again"),
-                  onPressed: () {
-                    context.pushReplacement('/config/${Uri.encodeComponent(category)}');
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildStatRow(BuildContext context, String label, String value, Color color, IconData icon) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 22, color: AppColors.textSecondary),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+  Widget _buildStatTile(
+    BuildContext context, {
+    required String title,
+    required String value,
+    required String subtitle,
+    required Color color,
+    required IconData icon,
+    required bool isCompact,
+    double valueFontSize = 24.0,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(isCompact ? 10.0 : 16.0),
+      decoration: BoxDecoration(
+        color: AppColors.surfacePrimary,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.25), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textSecondary,
-                    fontSize: 16,
                   ),
-            ),
-          ],
-        ),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                color: color,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-        ),
-      ],
+              Icon(icon, size: 18, color: color),
+            ],
+          ),
+          SizedBox(height: isCompact ? 3 : 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: valueFontSize,
+                fontWeight: FontWeight.bold,
+                color: color == AppColors.pastelPurple ? AppColors.darkSlate : (color == AppColors.pastelBlue ? AppColors.darkSlate : color),
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 }

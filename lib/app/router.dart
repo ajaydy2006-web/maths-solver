@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/splash/splash_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/practice/arithmetic_operations_screen.dart';
 import '../features/practice/configuration_screen.dart';
 import '../features/practice/session_screen.dart';
 import '../features/practice/mental_session_screen.dart';
@@ -31,10 +31,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
+        path: '/operations/arithmetic',
+        builder: (context, state) => const ArithmeticOperationsScreen(),
+      ),
+      GoRoute(
         path: '/config/:category',
         builder: (context, state) {
           final category = state.pathParameters['category']!;
-          return ConfigurationScreen(category: category);
+          final operation = state.uri.queryParameters['operation'];
+          return ConfigurationScreen(
+            category: category,
+            initialOperation: operation,
+          );
         },
       ),
       GoRoute(

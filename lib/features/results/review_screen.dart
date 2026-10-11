@@ -55,34 +55,49 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      Column(
-                        children: [
-                          Text("Category", style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                          const SizedBox(height: 4),
-                          Text(category, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        ],
+                      Expanded(
+                        child: Column(
+                          children: [
+                            const Text("Category", style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                            const SizedBox(height: 4),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(category, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                            ),
+                          ],
+                        ),
                       ),
                       Container(width: 1, height: 36, color: Colors.grey.shade300),
-                      Column(
-                        children: [
-                          Text("Score", style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                          const SizedBox(height: 4),
-                          Text(
-                            "${widget.result['score'] ?? 0} pts",
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryOrange),
-                          ),
-                        ],
+                      Expanded(
+                        child: Column(
+                          children: [
+                            const Text("Score", style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                            const SizedBox(height: 4),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                "${widget.result['score'] ?? 0} pts",
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.primaryOrange),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       Container(width: 1, height: 36, color: Colors.grey.shade300),
-                      Column(
-                        children: [
-                          Text("Accuracy", style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                          const SizedBox(height: 4),
-                          Text(
-                            totalCount > 0 ? "${((correctCount / totalCount) * 100).toStringAsFixed(0)}%" : "0%",
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.successGreen),
-                          ),
-                        ],
+                      Expanded(
+                        child: Column(
+                          children: [
+                            const Text("Accuracy", style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                            const SizedBox(height: 4),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                totalCount > 0 ? "${((correctCount / totalCount) * 100).toStringAsFixed(0)}%" : "0%",
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.successGreen),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -300,8 +315,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
+                      children: [
+                        const Text(
                           "Correct Answer",
                           style: TextStyle(
                             fontSize: 11,
@@ -309,9 +324,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        SizedBox(height: 2),
-                      ],
-                    )..children.add(
+                        const SizedBox(height: 2),
                         Text(
                           q.correctAnswer,
                           style: const TextStyle(
@@ -320,7 +333,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
                             color: AppColors.successGreen,
                           ),
                         ),
-                      ),
+                      ],
+                    ),
                   ),
                 ),
               ],
