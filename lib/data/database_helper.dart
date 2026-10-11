@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -7,9 +10,15 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
 
+  static const String _webPrefsKey = 'calcup_user_preferences';
+  static const String _webResultsKey = 'calcup_session_results';
+
   DatabaseHelper._init();
 
   Future<Database> get database async {
+    if (kIsWeb) {
+      throw UnsupportedError('SQLite is not used on Web');
+    }
     if (_database != null) return _database!;
     _database = await _initDB('calcup.db');
     return _database!;
@@ -57,6 +66,16 @@ class DatabaseHelper {
   }
 
   Future<UserPreferences> getUserPreferences() async {
+    if (kIsWeb) {
+      final sp = await SharedPreferences.getInstance();
+      final str = sp.getString(_webPrefsKey);
+      if (str != null && str.isNotEmpty) {
+        try {
+          return UserPreferences.fromMap(jsonDecode(str));
+        } catch (_) {}
+      }
+      return UserPreferences();
+    }
     final db = await instance.database;
     final maps = await db.query('user_preferences', limit: 1);
     
@@ -70,6 +89,11 @@ class DatabaseHelper {
   }
 
   Future<void> updateUserPreferences(UserPreferences prefs) async {
+    if (kIsWeb) {
+      final sp = await SharedPreferences.getInstance();
+      await sp.setString(_webPrefsKey, jsonEncode(prefs.toMap()));
+      return;
+    }
     final db = await instance.database;
     final maps = await db.query('user_preferences', limit: 1);
     if (maps.isNotEmpty) {
@@ -81,15 +105,37 @@ class DatabaseHelper {
   }
 
   Future<void> saveSessionResult(Map<String, dynamic> result) async {
-    final db = await instance.database;
     final data = Map<String, dynamic>.from(result);
     if (!data.containsKey('date') || data['date'] == null || data['date'].toString().isEmpty) {
       data['date'] = DateTime.now().toIso8601String();
     }
+
+    if (kIsWeb) {
+      final sp = await SharedPreferences.getInstance();
+      final currentList = await getSessionResults();
+      data['id'] = currentList.length + 1;
+      final updated = [SessionRecord.fromMap(data), ...currentList];
+      final encoded = updated.map((e) => e.toMap()).toList();
+      await sp.setString(_webResultsKey, jsonEncode(encoded));
+      return;
+    }
+
+    final db = await instance.database;
     await db.insert('session_results', data);
   }
 
   Future<List<SessionRecord>> getSessionResults() async {
+    if (kIsWeb) {
+      final sp = await SharedPreferences.getInstance();
+      final str = sp.getString(_webResultsKey);
+      if (str != null && str.isNotEmpty) {
+        try {
+          final List decoded = jsonDecode(str);
+          return decoded.map((m) => SessionRecord.fromMap(Map<String, dynamic>.from(m))).toList();
+        } catch (_) {}
+      }
+      return [];
+    }
     final db = await instance.database;
     final maps = await db.query('session_results', orderBy: 'id DESC');
     return maps.map((m) => SessionRecord.fromMap(m)).toList();
@@ -141,11 +187,22 @@ class DatabaseHelper {
   }
 
   Future<void> clearSessionResults() async {
+    if (kIsWeb) {
+      final sp = await SharedPreferences.getInstance();
+      await sp.remove(_webResultsKey);
+      return;
+    }
     final db = await instance.database;
     await db.delete('session_results');
   }
 
   Future<void> resetAllData() async {
+    if (kIsWeb) {
+      final sp = await SharedPreferences.getInstance();
+      await sp.remove(_webResultsKey);
+      await sp.remove(_webPrefsKey);
+      return;
+    }
     final db = await instance.database;
     await db.delete('session_results');
     await db.delete('user_preferences');
