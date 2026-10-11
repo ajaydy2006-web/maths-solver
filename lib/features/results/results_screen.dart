@@ -64,6 +64,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     final accuracy = total > 0 ? ((correct / total) * 100).toStringAsFixed(1) : '0';
     final avgSpeed = total > 0 ? (duration / total).toStringAsFixed(1) : '0';
     final score = widget.result['score'] ?? 0;
+    final isTerminated = widget.result['terminated'] == true;
 
     return PopScope(
       canPop: false,
@@ -118,11 +119,15 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                             width: trophySize,
                             height: trophySize,
                             decoration: BoxDecoration(
-                              color: AppColors.highlightYellow.withOpacity(0.35),
+                              color: isTerminated
+                                  ? AppColors.pastelPink.withOpacity(0.5)
+                                  : AppColors.highlightYellow.withOpacity(0.35),
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.highlightYellow.withOpacity(0.4),
+                                  color: isTerminated
+                                      ? AppColors.errorRed.withOpacity(0.3)
+                                      : AppColors.highlightYellow.withOpacity(0.4),
                                   blurRadius: 14,
                                   offset: const Offset(0, 4),
                                 ),
@@ -130,9 +135,11 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                             ),
                             child: Center(
                               child: Icon(
-                                Icons.emoji_events_rounded,
+                                isTerminated
+                                    ? Icons.heart_broken_rounded
+                                    : Icons.emoji_events_rounded,
                                 size: iconSize,
-                                color: AppColors.primaryOrange,
+                                color: isTerminated ? AppColors.errorRed : AppColors.primaryOrange,
                               ),
                             ),
                           ),
@@ -141,9 +148,10 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            "Session Complete!",
+                            isTerminated ? "Out of Lives!" : "Session Complete!",
                             style: Theme.of(context).textTheme.displayLarge?.copyWith(
                                   fontSize: titleFontSize,
+                                  color: isTerminated ? AppColors.errorRed : AppColors.textPrimary,
                                 ),
                             textAlign: TextAlign.center,
                           ),
@@ -152,7 +160,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            "$category • ${_formatDuration(duration)} practice",
+                            "$category • ${_formatDuration(duration)} practice • ${isTerminated ? 'All lives lost' : 'Time complete'}",
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   color: AppColors.textSecondary,
                                   fontSize: 14,

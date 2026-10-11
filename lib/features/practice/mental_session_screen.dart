@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
+import '../../data/providers.dart';
 import '../../services/question_generator.dart';
 
 class MentalSessionScreen extends ConsumerStatefulWidget {
@@ -80,7 +81,7 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
             _remainingSeconds = 0;
           });
         }
-        _finalizeSession();
+        _finalizeSession(terminatedByLives: false);
       } else if (remaining != _remainingSeconds) {
         if (mounted) {
           setState(() {
@@ -127,7 +128,7 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
     });
   }
 
-  void _finalizeSession() {
+  void _finalizeSession({bool terminatedByLives = false}) {
     if (_isFinished) return;
     _isFinished = true;
     _isSubmitting = true;
@@ -149,7 +150,8 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
       'totalQuestions': _attempts.length,
       'durationSeconds': durationSeconds,
       'attempts': _attempts,
-      'terminated': false,
+      'terminated': terminatedByLives,
+      'reason': terminatedByLives ? 'Out of Lives' : 'Time Expired',
     };
 
     if (mounted) {
@@ -186,11 +188,22 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
       _wrongCount++;
     }
 
+    final prefs = ref.read(userPreferencesNotifierProvider).value;
+    final maxLives = prefs?.wrongAnswerThreshold ?? 3;
+
+    // Immediately terminate session if all lives are lost within time
+    if (_wrongCount >= maxLives) {
+      await Future.delayed(const Duration(milliseconds: 250));
+      if (mounted) {
+        _finalizeSession(terminatedByLives: true);
+      }
+      return;
+    }
+
     await Future.delayed(const Duration(milliseconds: 300));
 
     if (!mounted || _isFinished) return;
 
-    // Session does not terminate on mistakes; runs until timer expires
     setState(() {
       _currentIndex++;
       if (_currentIndex >= _questions.length) {
@@ -247,6 +260,10 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
     final steps = currentQuestion.mentalSteps ?? [currentQuestion.displayExpression];
     final currentDisplayStep = _sequenceCompleted ? "= ?" : steps[_currentStepIndex];
 
+    final prefs = ref.watch(userPreferencesNotifierProvider).value;
+    final maxLives = prefs?.wrongAnswerThreshold ?? 3;
+    final livesRemaining = (maxLives - _wrongCount).clamp(0, maxLives);
+
     return Scaffold(
       backgroundColor: AppColors.backgroundCream,
       appBar: AppBar(
@@ -257,12 +274,46 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
           tooltip: 'End Session',
         ),
         actions: [
+          // Remaining Lives Indicator
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: livesRemaining <= 1
+                    ? AppColors.errorRed.withOpacity(0.12)
+                    : AppColors.surfacePrimary,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: livesRemaining <= 1
+                      ? AppColors.errorRed.withOpacity(0.5)
+                      : Colors.black.withOpacity(0.06),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (int i = 0; i < maxLives; i++)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                      child: Icon(
+                        i < livesRemaining ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                        size: 16,
+                        color: i < livesRemaining ? AppColors.errorRed : Colors.grey.shade400,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          // Countdown Timer Indicator
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.only(right: 14.0),
             child: Center(
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: _remainingSeconds <= 5
                       ? AppColors.errorRed.withOpacity(0.12)
@@ -276,7 +327,7 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
                   children: [
                     Icon(
                       Icons.timer_outlined,
-                      size: 18,
+                      size: 16,
                       color: _remainingSeconds <= 5 ? AppColors.errorRed : AppColors.primaryOrange,
                     ),
                     const SizedBox(width: 4),
@@ -285,6 +336,7 @@ class _MentalSessionScreenState extends ConsumerState<MentalSessionScreen> {
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: _remainingSeconds <= 5 ? AppColors.errorRed : AppColors.primaryOrange,
                             fontWeight: FontWeight.bold,
+                            fontSize: 14,
                           ),
                     ),
                   ],
