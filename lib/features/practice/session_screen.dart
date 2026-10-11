@@ -52,7 +52,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     _stopwatch.start();
 
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
+    _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
@@ -109,7 +109,11 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     };
 
     if (mounted) {
-      context.pushReplacement('/results', extra: result);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.go('/results', extra: result);
+        }
+      });
     }
   }
 

@@ -312,7 +312,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                               style: TextStyle(fontSize: buttonFontSize - 0.5, fontWeight: FontWeight.w600),
                             ),
                             onPressed: () {
-                              context.pushReplacement('/config/${Uri.encodeComponent(category)}');
+                              context.go('/config/${Uri.encodeComponent(category)}');
                             },
                           ),
                         ),

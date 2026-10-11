@@ -48,28 +48,44 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/session',
         builder: (context, state) {
-          final config = state.extra as PracticeConfiguration;
+          final config = (state.extra as PracticeConfiguration?) ??
+              PracticeConfiguration(category: 'Arithmetic', timerSeconds: 60);
           return SessionScreen(config: config);
         },
       ),
       GoRoute(
         path: '/mental-session',
         builder: (context, state) {
-          final config = state.extra as PracticeConfiguration;
+          final config = (state.extra as PracticeConfiguration?) ??
+              PracticeConfiguration(category: 'Mental Maths', timerSeconds: 60);
           return MentalSessionScreen(config: config);
         },
       ),
       GoRoute(
         path: '/results',
         builder: (context, state) {
-          final result = state.extra as Map<String, dynamic>;
+          final result = (state.extra as Map<String, dynamic>?) ??
+              {
+                'category': 'Practice',
+                'score': 0,
+                'correctAnswers': 0,
+                'incorrectAnswers': 0,
+                'totalQuestions': 0,
+                'durationSeconds': 60,
+                'attempts': <QuestionAttempt>[],
+                'terminated': false,
+              };
           return ResultsScreen(result: result);
         },
       ),
       GoRoute(
         path: '/review',
         builder: (context, state) {
-          final result = state.extra as Map<String, dynamic>;
+          final result = (state.extra as Map<String, dynamic>?) ??
+              {
+                'category': 'Practice',
+                'attempts': <QuestionAttempt>[],
+              };
           return ReviewScreen(result: result);
         },
       ),

@@ -70,6 +70,7 @@ class _ConfigurationScreenState extends ConsumerState<ConfigurationScreen> {
   List<String> _savedPresetNames = [];
 
   bool _isNavigating = false;
+  bool _userChangedTimer = false;
 
   String get _storageKey {
     if (widget.category == 'Arithmetic' || widget.category == 'Basic Arithmetic') {
@@ -93,7 +94,12 @@ class _ConfigurationScreenState extends ConsumerState<ConfigurationScreen> {
       setState(() {
         if (settings != null) {
           if (settings.containsKey('difficulty')) _difficulty = settings['difficulty'];
-          if (settings.containsKey('timerSeconds')) _timerSeconds = settings['timerSeconds'];
+          if (!_userChangedTimer && settings.containsKey('timerSeconds')) {
+            final t = settings['timerSeconds'];
+            if (t is int && t >= 15) {
+              _timerSeconds = t.clamp(15, 600);
+            }
+          }
           if (settings.containsKey('questionCount')) _questionCount = settings['questionCount'];
           if (settings.containsKey('digits')) _digits = settings['digits'];
           if (settings.containsKey('operandsCount')) _operandsCount = settings['operandsCount'];
@@ -149,10 +155,12 @@ class _ConfigurationScreenState extends ConsumerState<ConfigurationScreen> {
 
     await _saveCurrentSettings();
 
+    final validTimer = _timerSeconds.clamp(15, 600);
+
     final config = PracticeConfiguration(
       category: widget.category,
       difficulty: _difficulty,
-      timerSeconds: _timerSeconds,
+      timerSeconds: validTimer,
       questionCount: _questionCount,
       operation: _selectedOperation,
       digits: _digits,
@@ -245,7 +253,10 @@ class _ConfigurationScreenState extends ConsumerState<ConfigurationScreen> {
               CalcupTimeSlider(
                 selectedSeconds: _timerSeconds,
                 onTimeChanged: (newSecs) {
-                  setState(() => _timerSeconds = newSecs);
+                  setState(() {
+                    _timerSeconds = newSecs.clamp(15, 600);
+                    _userChangedTimer = true;
+                  });
                   _saveCurrentSettings();
                 },
               ),
